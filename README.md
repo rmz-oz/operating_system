@@ -6,9 +6,10 @@
 
 | Topic | Status | Link |
 |-------|--------|------|
-| 1 · Introduction — What is an OS? | Ready — 15 Q | [Open](https://rmz-oz.github.io/operating_system/topic1.html) |
-| 2 · Process, Process API & Limited Direct Execution | Ready — 30 Q | [Open](https://rmz-oz.github.io/operating_system/topic2.html) |
-| 3 · Scheduling, MLFQ, Address Spaces & Translation | Ready — 30 Q | [Open](https://rmz-oz.github.io/operating_system/topic3.html) |
-| 4 · Segmentation & Paging | Ready — 30 Q | [Open](https://rmz-oz.github.io/operating_system/topic4.html) |
+| 1 · Introduction — What is an OS? | Ready — 45 Q | [Open](https://rmz-oz.github.io/operating_system/topic1.html) |
+| 2 · Process, Process API & Limited Direct Execution | Ready — 45 Q | [Open](https://rmz-oz.github.io/operating_system/topic2.html) |
+| 3 · Scheduling, MLFQ, Address Spaces & Translation | Ready — 45 Q | [Open](https://rmz-oz.github.io/operating_system/topic3.html) |
+| 4 · Segmentation & Paging | Ready — 45 Q | [Open](https://rmz-oz.github.io/operating_system/topic4.html) |
+| 5 · TLB, Advanced Page Tables & Swapping Mechanisms and Policies | Ready — 30 Q | [Open](https://rmz-oz.github.io/operating_system/topic5.html) |
 
 Each topic includes a **lesson page** and an **interactive quiz** with instant feedback.

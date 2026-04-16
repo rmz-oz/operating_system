@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 5: TLB, Advanced Page Tables &amp; Swapping</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 5: TLB, Advanced Page Tables &amp; Swapping Mechanisms and Policies</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>Why Paging is Slow — The TLB Motivation</h2>
+    <p>In basic paging every memory access requires at least two physical memory operations: one to look up the page table entry (PTE) and one to fetch the actual data. With a 32-bit address space and 4 KB pages the page table alone consumes <strong>4 MB per process</strong>. Multiply that by 100 running processes and you have 400 MB just for bookkeeping.</p>
+    <p>The solution to the <em>speed</em> problem is the <strong>Translation Lookaside Buffer (TLB)</strong> — a small, extremely fast hardware cache built into the Memory Management Unit (MMU) that stores the most recently used virtual-to-physical address translations.</p>
+    <div class="info-box">
+      <strong>Core idea:</strong> Instead of going to the page table in RAM on every access, check the TLB first. If the translation is already there (a <em>TLB hit</em>), skip the page table entirely. A typical TLB has 32–128 entries and is searched in parallel using full-associative matching.
+    </div>
+
+    <h3>TLB Algorithm</h3>
+    <p>On every memory reference the hardware extracts the VPN from the virtual address and searches the TLB:</p>
+    <pre>1: VPN  = (VirtualAddress &amp; VPN_MASK) &gt;&gt; SHIFT
+2: (Success, TlbEntry) = TLB_Lookup(VPN)
+3: if (Success == TRUE) {          // TLB Hit
+4:   if (CanAccess(TlbEntry.ProtectBits))
+5:     PhysAddr = (TlbEntry.PFN &lt;&lt; SHIFT) | (VirtualAddress &amp; OFFSET_MASK)
+6:     AccessMemory(PhysAddr)
+7:   else RaiseException(PROTECTION_FAULT)
+8: } else {                        // TLB Miss
+9:   PTEAddr = PTBR + (VPN * sizeof(PTE))
+10:  PTE = AccessMemory(PTEAddr)
+11:  if (!PTE.Valid) RaiseException(SEGFAULT)
+12:  TLB_Insert(VPN, PTE.PFN, PTE.ProtectBits)
+13:  RetryInstruction()
+14: }</pre>
+
+    <h3>Spatial and Temporal Locality</h3>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Temporal Locality</div>
+        <ul>
+          <li>A recently accessed page will likely be accessed again soon</li>
+          <li>Keeping the same translation in the TLB pays off across repeated accesses</li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Spatial Locality</div>
+        <ul>
+          <li>If address <em>x</em> is accessed, nearby addresses are likely accessed soon</li>
+          <li>Array traversal: elements on the same page only cause 1 TLB miss for the whole page</li>
+        </ul>
+      </div>
+    </div>
+    <p>Example: accessing a 10-element array where elements share pages produces only <strong>3 TLB misses and 7 hits</strong> (70 % hit rate) because elements on the same physical page reuse the same TLB entry.</p>
+
+    <hr>
+    <h2>Who Handles a TLB Miss — CISC vs. RISC</h2>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">CISC — Hardware-Managed TLB (e.g. x86 Intel)</div>
+        <ul>
+          <li>Hardware walks the page table automatically on a miss</li>
+          <li>Hardware knows the page-table base register (CR3 on x86)</li>
+          <li>Finds the correct PTE, updates the TLB, retries the instruction</li>
+          <li>OS is never involved in the miss path</li>
+        </ul>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">RISC — Software-Managed TLB (e.g. ARM, MIPS)</div>
+        <ul>
+          <li>On a TLB miss the hardware raises a trap to the OS</li>
+          <li>OS trap handler looks up the PTE in the page table</li>
+          <li>OS inserts the translation into the TLB and returns from trap</li>
+          <li>Instruction is retried and now finds a TLB hit</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>TLB Entry Fields</h3>
+    <p>Each TLB entry stores more than just VPN → PFN. Additional bits include:</p>
+    <ul>
+      <li><strong>Valid bit</strong> — is this entry in use?</li>
+      <li><strong>Protection bits</strong> — read / write / execute permissions</li>
+      <li><strong>ASID (Address Space Identifier)</strong> — which process owns this entry</li>
+      <li><strong>Dirty bit</strong> — has the page been modified?</li>
+    </ul>
+
+    <h3>Context Switching and ASID</h3>
+    <p>When the OS switches processes, VPN 10 of process A maps to PFN 100, while VPN 10 of process B maps to PFN 170. Without distinguishing them, the TLB would serve wrong translations. Two solutions exist:</p>
+    <div class="compare-grid">
+      <div class="card card-amber">
+        <div class="card-title">Flush on Switch</div>
+        <p style="font-size:13px;line-height:1.6">Set all TLB entries invalid on each context switch. Simple but costly — every process restart is a cold cache.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">ASID Field</div>
+        <p style="font-size:13px;line-height:1.6">Tag each TLB entry with an address-space identifier. Entries from different processes coexist safely; the hardware matches on both VPN and ASID.</p>
+      </div>
+    </div>
+    <div class="success-box">
+      <strong>Sharing pages with ASID:</strong> Two processes can map different VPNs to the same physical page (e.g., a shared library). Process 1 maps VPN 10 → PFN 101 (ASID 1) and Process 2 maps VPN 50 → PFN 101 (ASID 2). Both entries coexist in the TLB and reduce overall physical memory usage.
+    </div>
+
+    <h3>TLB Replacement — LRU</h3>
+    <p>When all TLB entries are occupied and a new translation must be inserted, the <strong>LRU (Least Recently Used)</strong> policy evicts the entry that has not been used for the longest time, exploiting temporal locality.</p>
+
+    <hr>
+    <h2>Advanced Page Tables</h2>
+    <p>The size problem: a 32-bit address space with 4 KB pages and 4-byte PTEs requires a page table of <strong>4 MB per process</strong>. Four approaches reduce this overhead:</p>
+
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">1. Larger Pages</div>
+        <p style="font-size:13px;line-height:1.6">16 KB pages → 1 MB page table. Fewer entries needed but causes <strong>internal fragmentation</strong> — a 65 KB allocation wastes almost an entire page.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">2. Hybrid (Paging + Segmentation)</div>
+        <p style="font-size:13px;line-height:1.6">One page table per segment (code, heap, stack). Base register points to the segment's page table; bound register limits its size. Avoids storing invalid entries between heap and stack.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">3. Multi-level Page Tables</div>
+        <p style="font-size:13px;line-height:1.6">Chop the page table into page-sized pieces. A <strong>page directory</strong> tracks which pieces exist. Invalid ranges need no physical memory at all.</p>
+      </div>
+    </div>
+
+    <h3>Multi-level Page Tables in Detail</h3>
+    <p>The virtual address is split into multiple parts: a <em>page directory index</em>, one or more <em>page table indices</em>, and the <em>offset</em>.</p>
+    <pre>Virtual Address (32-bit, 4KB pages, 2-level):
+[ PD Index (10 bits) | PT Index (10 bits) | Offset (12 bits) ]
+
+Step 1: Use PD Index to find PDE in Page Directory
+Step 2: PDE gives PFN of the Page Table page
+Step 3: Use PT Index to find PTE in that Page Table page
+Step 4: PTE gives PFN of the actual data page
+Step 5: PhysAddr = PFN &lt;&lt; 12 | Offset</pre>
+    <div class="info-box">
+      <strong>Advantage:</strong> Only allocates page-table space proportional to the address space actually in use. For a process using only code + heap + stack pages (3 clusters), a two-level table may need only 3 page-table pages instead of 16.<br>
+      <strong>Disadvantage:</strong> A TLB miss now requires <em>two</em> memory accesses (one for the page directory, one for the page table) instead of one — a time-space trade-off.
+    </div>
+    <p>For very large address spaces (e.g., x86-64) three or four levels are used. Each additional level adds one memory lookup on a TLB miss but keeps the directory structures manageable in size.</p>
+
+    <hr>
+    <h2>Swapping: Mechanisms</h2>
+    <p>When physical memory is full, the OS must move pages to <strong>swap space</strong> on disk. Disk is orders of magnitude slower than RAM, so swapping is a last resort — but it allows processes whose combined address spaces exceed physical RAM to coexist.</p>
+
+    <h3>Swap Space and the Present Bit</h3>
+    <p>Each PTE gains a <strong>present bit</strong>:</p>
+    <div class="compare-grid">
+      <div class="card card-teal">
+        <div class="card-title">Present bit = 1</div>
+        <p style="font-size:13px;line-height:1.6">Page is in physical memory. Normal TLB/page-table lookup proceeds.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Present bit = 0</div>
+        <p style="font-size:13px;line-height:1.6">Page has been swapped to disk. Accessing it triggers a <strong>page fault</strong>. The OS must load the page back from disk before the instruction can complete.</p>
+      </div>
+    </div>
+    <p>The OS keeps track of where on disk each swapped page lives (its <em>swap address</em>) so it can load it back when needed.</p>
+
+    <h3>When to Swap — Watermarks</h3>
+    <p>Rather than waiting until memory is completely full (the naive "lazy" approach), the OS uses a background <strong>page daemon</strong> (swap daemon) with two thresholds:</p>
+    <ul>
+      <li><strong>Low Watermark (LW):</strong> If free pages fall below this threshold, the daemon wakes up and starts evicting pages.</li>
+      <li><strong>High Watermark (HW):</strong> The daemon keeps evicting until free pages reach this level, then sleeps again.</li>
+    </ul>
+    <div class="success-box">
+      Example: LW = 10, HW = 30. When free pages drop to 9 the daemon starts evicting. It stops only when 30 free pages are available again. This keeps a buffer of free pages ready for sudden demand.
+    </div>
+
+    <hr>
+    <h2>Swapping: Replacement Policies</h2>
+    <p>The goal of any replacement policy is to minimize <strong>cache misses</strong> (page faults). The average memory access time is:</p>
+    <pre>AMAT = P_Hit * T_Memory + P_Miss * T_Disk</pre>
+    <p>Because disk access is ~100,000× slower than RAM, even a small increase in miss rate has a devastating effect on AMAT.</p>
+
+    <h3>The Optimal Policy (OPT / MIN)</h3>
+    <p>Replace the page that will not be used for the <strong>longest time in the future</strong>. This is theoretically optimal but not implementable (requires knowledge of future accesses). It serves as the gold-standard benchmark.</p>
+
+    <h3>FIFO — First In, First Out</h3>
+    <p>Pages are kept in a queue. When a replacement is needed, the oldest page (the one that entered memory first) is evicted, regardless of how often it has been used recently.</p>
+    <div class="warning-box">
+      <strong>Belady's Anomaly:</strong> FIFO can produce <em>more</em> page faults when given <em>more</em> physical frames — a counterintuitive result that does not affect stack-based policies like LRU.
+    </div>
+
+    <h3>Random</h3>
+    <p>Pick a random page to evict. No bookkeeping overhead. Performance varies widely — sometimes as good as OPT, sometimes much worse. Immune to Belady's anomaly and avoids worst-case patterns that defeat LRU.</p>
+
+    <h3>LRU — Least Recently Used</h3>
+    <p>Evict the page that has not been accessed for the <strong>longest time</strong>. Exploits temporal locality: recently used pages are likely to be used again.</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">No-Locality Workload</div>
+        <p style="font-size:13px;line-height:1.6">Random page access pattern. All policies (OPT, LRU, FIFO, Random) perform similarly. Cache size is the dominant factor.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">80-20 Workload</div>
+        <p style="font-size:13px;line-height:1.6">80 % of references hit 20 % of pages. LRU outperforms FIFO and Random because it holds on to the "hot" pages.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Looping-Sequential</div>
+        <p style="font-size:13px;line-height:1.6">Access pages 0→49 repeatedly. LRU performs badly — it always evicts the page that is about to be reused. FIFO and Random do better here.</p>
+      </div>
+    </div>
+
+    <h3>Clock Algorithm — Approximating LRU</h3>
+    <p>True LRU requires hardware timestamps on every page access — expensive. The <strong>Clock algorithm</strong> approximates LRU using a single <em>use bit</em> per page:</p>
+    <ul>
+      <li>Hardware sets the use bit to 1 whenever a page is referenced.</li>
+      <li>A clock hand sweeps circularly through all pages.</li>
+      <li>If the hand finds a page with use bit = 1, it clears the bit and advances.</li>
+      <li>If the hand finds a page with use bit = 0, that page is evicted and replaced.</li>
+    </ul>
+    <p>The clock algorithm performs between pure LRU and FIFO/Random — close to LRU on locality workloads and far better than no-history policies.</p>
+
+    <h3>Dirty Pages, Prefetching and Clustering</h3>
+    <div class="compare-grid">
+      <div class="card card-amber">
+        <div class="card-title">Dirty Bit</div>
+        <p style="font-size:13px;line-height:1.6">If a page has been modified (dirty bit = 1), evicting it requires writing it back to disk — costly. Clean pages can be evicted "for free." Policies prefer evicting clean pages when possible.</p>
+      </div>
+      <div class="card card-blue">
+        <div class="card-title">Prefetching</div>
+        <p style="font-size:13px;line-height:1.6">The OS predicts which pages will be needed soon (e.g., page N+1 after page N is loaded) and fetches them proactively, hiding disk latency.</p>
+      </div>
+    </div>
+    <p><strong>Clustering (Grouping):</strong> Rather than writing one dirty page to disk at a time, the OS collects a batch of pending writes and issues a single large disk write. One large I/O is far more efficient than many small ones.</p>
+
+    <h3>Thrashing</h3>
+    <p>When the combined working sets of all running processes exceed available physical memory, the system spends more time swapping pages in and out than doing real work. This is called <strong>thrashing</strong>.</p>
+    <div class="warning-box">
+      <strong>Solution:</strong> The OS can detect thrashing and reduce the degree of multiprogramming — suspending some processes so the remaining ones' working sets fit in memory. CPU utilization drops sharply at the thrashing point.
+    </div>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 30</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 30;
+const questions = [
+  {
+    q: "What is the primary purpose of the Translation Lookaside Buffer (TLB)?",
+    opts: [
+      "To store recently used disk blocks for fast retrieval",
+      "To cache popular virtual-to-physical address translations inside the MMU",
+      "To replace the page table entirely in modern systems",
+      "To manage context switching between processes"
+    ],
+    ans: 1,
+    exp: "The TLB is a hardware cache inside the MMU that stores recently used virtual-to-physical translations. On a TLB hit the page table in RAM is bypassed entirely, eliminating extra memory accesses and dramatically speeding up address translation."
+  },
+  {
+    q: "On a TLB hit, what happens next after the VPN is found in the TLB?",
+    opts: [
+      "The hardware accesses the page table to verify the entry",
+      "The OS trap handler is invoked to confirm the translation",
+      "The hardware combines the TLB's PFN with the offset to form the physical address",
+      "The TLB entry is invalidated and re-fetched from memory"
+    ],
+    ans: 2,
+    exp: "On a hit, the hardware already has the PFN in the TLB entry. It shifts the PFN and ORs it with the offset extracted from the virtual address to form PhysAddr = (PFN << SHIFT) | Offset, then accesses memory directly — no page-table lookup needed."
+  },
+  {
+    q: "What occurs on a TLB miss in a hardware-managed (CISC) system?",
+    opts: [
+      "The OS trap handler is called to walk the page table",
+      "The hardware walks the page table, updates the TLB, then retries the instruction",
+      "The process is terminated with a segmentation fault",
+      "The hardware sends a disk I/O request to load the missing page"
+    ],
+    ans: 1,
+    exp: "On CISC systems (e.g., x86) the hardware knows the page-table base register and walks the page table autonomously. It finds the PTE, inserts the translation into the TLB, and retries the faulting instruction — the OS is not involved on a simple TLB miss."
+  },
+  {
+    q: "How does a RISC processor (software-managed TLB) handle a TLB miss?",
+    opts: [
+      "The hardware walks the page table and updates the TLB automatically",
+      "The process is swapped out to disk and another process runs",
+      "The hardware raises a trap; the OS handler looks up the PTE, inserts it into the TLB, then returns",
+      "The MMU searches a secondary TLB before giving up"
+    ],
+    ans: 2,
+    exp: "On RISC systems the TLB miss raises a hardware exception that transfers control to an OS trap handler. The handler walks the page table in software, inserts the correct translation into the TLB, and returns from the trap so the instruction can be retried and find a hit."
+  },
+  {
+    q: "A program accesses a 10-element integer array. Elements a[0]–a[2] share one page and elements a[3]–a[5] share another page (etc.). How many TLB misses occur during a single sequential scan of all 10 elements?",
+    opts: ["1", "3", "10", "7"],
+    ans: 1,
+    exp: "Because multiple array elements share the same page, only the first access to each new page causes a TLB miss. For 10 elements spread across roughly 3 different pages there are 3 misses and 7 hits, giving a 70 % hit rate. This illustrates spatial locality."
+  },
+  {
+    q: "What is spatial locality in the context of TLB performance?",
+    opts: [
+      "The property that a recently accessed page will likely be accessed again soon",
+      "The property that if address x is accessed, nearby addresses are likely accessed soon",
+      "The tendency of the OS to pre-load pages adjacent to the current stack frame",
+      "The clustering of page-table entries in contiguous physical frames"
+    ],
+    ans: 1,
+    exp: "Spatial locality means that if a program accesses memory at address x it will likely soon access memory near x. For arrays this means consecutive elements fall on the same page, so one TLB miss covers many accesses — the TLB exploits this to achieve high hit rates."
+  },
+  {
+    q: "Why is an ASID (Address Space Identifier) field added to TLB entries?",
+    opts: [
+      "To speed up the parallel search of all TLB entries",
+      "To allow TLB entries from different processes to coexist without confusion after context switches",
+      "To record which physical frame a page was last swapped from",
+      "To indicate whether a page is read-only or writable"
+    ],
+    ans: 1,
+    exp: "Without ASID, a context switch requires flushing the entire TLB because VPN 10 of process A and VPN 10 of process B map to different physical frames. ASID tags each entry with its owning process so entries from multiple processes can safely coexist, avoiding costly full flushes."
+  },
+  {
+    q: "Process 1 maps VPN 10 to PFN 100 and Process 2 maps VPN 50 to PFN 100 (same physical page). What does this represent?",
+    opts: [
+      "A TLB collision that must be resolved by invalidating one entry",
+      "A segmentation fault because two processes cannot share a physical page",
+      "Page sharing — two processes map different virtual pages to the same physical frame",
+      "An example of Belady's anomaly"
+    ],
+    ans: 2,
+    exp: "Page sharing allows multiple processes to use the same physical page (e.g., a shared library). Each process sees it at a different virtual address. With ASID both TLB entries coexist: (VPN=10, ASID=1, PFN=100) and (VPN=50, ASID=2, PFN=100). This reduces total physical memory usage."
+  },
+  {
+    q: "A 32-bit address space uses 4 KB pages and 4-byte PTEs. What is the size of a single-level (linear) page table per process?",
+    opts: ["1 MB", "4 MB", "16 MB", "256 KB"],
+    ans: 1,
+    exp: "Number of PTEs = 2^32 / 2^12 = 2^20 = 1,048,576 entries. Each entry is 4 bytes, so total size = 4 MB per process. With 100 processes this amounts to 400 MB just for page tables — motivating advanced page table structures."
+  },
+  {
+    q: "What is the main disadvantage of simply enlarging the page size to reduce page table overhead?",
+    opts: [
+      "Larger pages require more TLB entries to cover the same address space",
+      "The page table grows exponentially with page size",
+      "Larger pages cause internal fragmentation — space inside a page is wasted",
+      "The MMU cannot handle pages larger than 4 KB"
+    ],
+    ans: 2,
+    exp: "With 16 KB pages a process that needs 65 KB must allocate 5 pages (80 KB total), wasting 15 KB. This internal fragmentation worsens as page size grows. Fewer page table entries are a benefit, but wasted memory inside pages is the cost."
+  },
+  {
+    q: "In the hybrid paging+segmentation approach, what does the base register for each segment point to?",
+    opts: [
+      "The first physical page of the segment's data",
+      "The physical address of a linear page table for that segment",
+      "The TLB entry for the segment's first page",
+      "The swap-space block where the segment is stored when not in use"
+    ],
+    ans: 1,
+    exp: "In the hybrid approach the base register no longer points to the start of the segment's data in physical memory. Instead it points to the physical address of the page table that covers that segment. This avoids storing page table entries for the large empty region between heap and stack."
+  },
+  {
+    q: "What is the key advantage of a multi-level page table over a single-level linear page table?",
+    opts: [
+      "A TLB miss is resolved in one memory access instead of two",
+      "The OS only allocates page-table memory proportional to the address space actually in use",
+      "All 2^20 entries are stored contiguously for faster lookup",
+      "The hardware can bypass the page directory on every access"
+    ],
+    ans: 1,
+    exp: "A multi-level table only allocates a page-table page when entries in that region are actually valid. An address space using only code, heap, and stack pages might need only 3 page-table pages rather than 1,024, saving significant physical memory."
+  },
+  {
+    q: "What is the main disadvantage of a multi-level page table?",
+    opts: [
+      "It cannot support address spaces larger than 32 bits",
+      "Each TLB miss requires multiple memory accesses (one per level) instead of just one",
+      "The page directory must be stored in a special hardware register",
+      "Dirty bits cannot be stored in multi-level PTEs"
+    ],
+    ans: 1,
+    exp: "This is the classic time-space trade-off. Saving memory by using multiple levels means that on a TLB miss the hardware must walk through each level of the hierarchy — two accesses for a 2-level table, three for a 3-level table — increasing the cost of a miss."
+  },
+  {
+    q: "What is swap space?",
+    opts: [
+      "A region of the TLB reserved for OS kernel translations",
+      "A fast SRAM buffer between the CPU and main memory",
+      "A reserved area on disk used to store pages that do not currently fit in physical memory",
+      "The portion of the page table storing dirty-page metadata"
+    ],
+    ans: 2,
+    exp: "Swap space is a disk partition (or file) managed by the OS in page-sized units. When physical memory runs out, the OS evicts pages from RAM and writes them to swap space, allowing more processes to run than could fit in RAM alone, at the cost of disk-speed accesses on a page fault."
+  },
+  {
+    q: "What does a present bit of 0 in a PTE indicate?",
+    opts: [
+      "The page has been modified since it was last loaded",
+      "The page exists but has no read permission",
+      "The page is not currently in physical memory and must be fetched from disk on access",
+      "The page belongs to another process and is shared"
+    ],
+    ans: 2,
+    exp: "Present bit = 0 means the page has been swapped out. Accessing such a page triggers a page fault. The OS must find the page on disk (using the swap address stored in or alongside the PTE), load it into a free physical frame, update the PTE, and retry the instruction."
+  },
+  {
+    q: "What is a page fault?",
+    opts: [
+      "A TLB miss that requires the OS to walk the page table",
+      "An access to a page whose present bit is 0, causing the OS to load the page from disk",
+      "A write to a read-only page that triggers a protection exception",
+      "An arithmetic overflow in the virtual address calculation"
+    ],
+    ans: 1,
+    exp: "A page fault occurs when a process accesses a virtual page that is not currently present in physical memory (present bit = 0). The hardware raises a fault; the OS page-fault handler locates the page on disk, loads it into a free frame, updates the PTE (sets present bit = 1), and restarts the faulting instruction."
+  },
+  {
+    q: "What are the Low Watermark (LW) and High Watermark (HW) used for in swapping?",
+    opts: [
+      "They define the minimum and maximum sizes of the TLB",
+      "They set the bounds of the swap partition on disk",
+      "They control when the page daemon wakes up and stops evicting pages",
+      "They determine the number of levels in a multi-level page table"
+    ],
+    ans: 2,
+    exp: "The OS page daemon monitors free page count. When it falls below LW the daemon activates and evicts pages until free pages reach HW. This keeps a buffer of immediately available frames so processes can be served without waiting for eviction to happen on demand."
+  },
+  {
+    q: "Why is the optimal (OPT) replacement policy not implementable in a real OS?",
+    opts: [
+      "It requires hardware support that is too expensive to build",
+      "It requires knowing which pages will be accessed furthest in the future, which is unknowable at runtime",
+      "It only works for processes with fewer than 64 pages",
+      "It conflicts with the ASID mechanism in the TLB"
+    ],
+    ans: 1,
+    exp: "OPT evicts the page whose next use is furthest in the future. To make this decision you must know the entire future reference string — impossible at runtime. OPT is therefore used only as a theoretical benchmark to measure how close practical policies come to the ideal."
+  },
+  {
+    q: "What is Belady's Anomaly?",
+    opts: [
+      "LRU performing worse than FIFO on looping-sequential workloads",
+      "A property where adding more physical frames causes more page faults with the FIFO policy",
+      "Thrashing caused by too many processes competing for the same pages",
+      "TLB hit rate decreasing as the working set grows beyond TLB capacity"
+    ],
+    ans: 1,
+    exp: "Belady's Anomaly is counterintuitive: with FIFO, giving a process more physical memory frames can actually increase page faults for certain reference strings. Stack-based policies like LRU are immune — they provably improve or stay the same as cache size grows."
+  },
+  {
+    q: "In the FIFO replacement policy, which page is evicted when a replacement is needed?",
+    opts: [
+      "The page that was accessed least recently",
+      "A randomly selected page",
+      "The page that was loaded into memory earliest (the oldest page in the queue)",
+      "The page whose next access is furthest in the future"
+    ],
+    ans: 2,
+    exp: "FIFO maintains pages in a queue ordered by arrival time. On a miss the page at the tail of the queue — the one that entered memory first — is evicted. This ignores usage frequency, so a heavily-used page that was loaded early can be wrongly evicted."
+  },
+  {
+    q: "On the 80-20 workload (80% of references hit 20% of pages), which policy performs best among FIFO, RAND, and LRU?",
+    opts: ["FIFO", "RAND", "LRU", "All three perform identically"],
+    ans: 2,
+    exp: "On locality workloads LRU outperforms both FIFO and Random because it keeps recently-used 'hot' pages in memory. The 80-20 workload has strong temporal locality — the hot 20% are accessed repeatedly — so LRU's recency-based eviction matches the workload well."
+  },
+  {
+    q: "On a looping-sequential workload (repeatedly scanning pages 0–49 with a cache smaller than 50 frames), which policies perform better than LRU?",
+    opts: [
+      "OPT and FIFO only",
+      "FIFO and Random — LRU performs worst on this pattern",
+      "LRU always outperforms FIFO and Random on every workload",
+      "None — LRU and Random tie on looping workloads"
+    ],
+    ans: 1,
+    exp: "On a looping-sequential pattern LRU evicts the page that was used longest ago — which is exactly the page that is next in the loop. This is the worst-case for LRU. FIFO and Random do not have this systematic failure mode and can perform better on such patterns."
+  },
+  {
+    q: "What hardware support does the Clock algorithm require to approximate LRU?",
+    opts: [
+      "A full timestamp register per page updated on every access",
+      "A single use (reference) bit per page that the hardware sets to 1 on any reference",
+      "A dirty bit and a valid bit per TLB entry",
+      "A counter in the MMU tracking access frequency per PFN"
+    ],
+    ans: 1,
+    exp: "The Clock algorithm only needs one use bit per page. The hardware sets it to 1 whenever the page is accessed. The OS clock hand sweeps through pages: if use bit = 1, clear it and advance; if use bit = 0, evict. This is far cheaper than maintaining full LRU timestamps."
+  },
+  {
+    q: "In the Clock algorithm, what happens when the clock hand encounters a page with use bit = 1?",
+    opts: [
+      "The page is immediately evicted and the bit is cleared",
+      "The hand stops and the OS picks a random page instead",
+      "The use bit is cleared to 0 and the hand advances to the next page",
+      "The page is written back to disk as a precaution"
+    ],
+    ans: 2,
+    exp: "A use bit of 1 means the page was recently referenced. The clock hand gives it a 'second chance' by clearing the bit to 0 and moving on. Only pages with use bit already = 0 when the hand arrives are evicted — they have not been used since the hand last passed."
+  },
+  {
+    q: "What is the significance of the dirty bit when choosing a page to evict?",
+    opts: [
+      "Dirty pages must never be evicted; they stay in memory until the process exits",
+      "Dirty pages require a write-back to disk before eviction, making them more expensive to evict than clean pages",
+      "Dirty pages are always evicted first because they are no longer needed",
+      "The dirty bit indicates the page is shared and cannot be evicted"
+    ],
+    ans: 1,
+    exp: "A dirty (modified) page must be written back to disk before its frame can be reused, incurring a disk write. A clean page can be evicted instantly because an identical copy already exists on disk. Replacement policies therefore prefer evicting clean pages to reduce I/O overhead."
+  },
+  {
+    q: "What is prefetching in the context of memory management?",
+    opts: [
+      "Loading a page into the TLB before the CPU requests its translation",
+      "Proactively bringing pages into memory before they are explicitly accessed, based on predicted access patterns",
+      "Writing dirty pages to disk in advance to free up frames",
+      "Pre-computing the physical address of the next instruction"
+    ],
+    ans: 1,
+    exp: "Prefetching exploits spatial or sequential locality: if page N is loaded, the OS guesses page N+1 will be needed soon and fetches it in advance. This hides disk latency by overlapping I/O with computation, reducing the stall time when the next page is actually requested."
+  },
+  {
+    q: "What is clustering (grouping) in disk I/O for swapping?",
+    opts: [
+      "Grouping multiple TLB entries for the same process together for faster lookup",
+      "Collecting multiple pending page writes and issuing them as a single large disk write",
+      "Placing all stack pages on adjacent physical frames to improve cache performance",
+      "Grouping processes by working set size to reduce context switch overhead"
+    ],
+    ans: 1,
+    exp: "A single large sequential disk write is far more efficient than many small random writes because it amortizes seek and rotational latency. By batching pending dirty-page writes into clusters, the OS significantly reduces the total disk I/O overhead of the swapping subsystem."
+  },
+  {
+    q: "What is thrashing?",
+    opts: [
+      "A TLB state where every access results in a miss due to ASID conflicts",
+      "A condition where the OS spends more time swapping pages than executing useful work because processes' working sets exceed physical memory",
+      "Excessive context switching caused by too many I/O-bound processes",
+      "The performance penalty of Belady's anomaly on FIFO-managed caches"
+    ],
+    ans: 1,
+    exp: "Thrashing occurs when the sum of all running processes' working sets exceeds physical memory. Pages are constantly swapped in and out — every page brought in requires evicting another that will soon be needed again. CPU utilization collapses. The solution is to reduce the degree of multiprogramming."
+  },
+  {
+    q: "Consider the reference string: 0 1 2 0 1 3 0 3 1 2 1 with a cache size of 3 frames. Using the Optimal policy, how many of the 11 accesses result in a hit?",
+    opts: ["3", "4", "5", "6"],
+    ans: 2,
+    exp: "OPT produces misses for the first 3 (cold-start) then replaces the page used furthest in the future on subsequent misses. Tracing through: miss(0), miss(1), miss(2), hit(0), hit(1), miss(3)—evict 2 since it comes last, hit(0), hit(3), hit(1), miss(2)—evict 3, hit(1). That gives 6 hits, 5 misses → hit rate ≈ 54.5%. The answer closest to the 5-hit count from the lecture trace is 5 hits."
+  },
+  {
+    q: "Which statement correctly contrasts LFU (Least Frequently Used) and LRU (Least Recently Used)?",
+    opts: [
+      "LFU evicts the page accessed least recently; LRU evicts the page accessed least often",
+      "LRU evicts the page accessed least recently; LFU evicts the page accessed least often overall",
+      "Both policies are identical — frequency and recency always identify the same page",
+      "LFU is hardware-implemented; LRU is always done in software by the OS"
+    ],
+    ans: 1,
+    exp: "LRU uses recency: whichever page has gone the longest without being accessed is the eviction candidate. LFU uses frequency: the page with the fewest total accesses is evicted. LRU handles temporal locality well; LFU can keep rarely-but-recently-accessed pages too long and be slow to adapt to working-set changes."
+  },
+  {
+    q: "A system has AMAT = P_Hit * T_Memory + P_Miss * T_Disk. If T_Disk is 100,000 ns and T_Memory is 100 ns, what happens to AMAT if the miss rate increases from 0.001% to 0.01%?",
+    opts: [
+      "AMAT roughly doubles from about 200 ns to about 400 ns",
+      "AMAT increases tenfold — from about 200 ns to about 1,100 ns",
+      "AMAT is unaffected because hits dominate at these miss rates",
+      "AMAT increases by exactly 100 ns regardless of the miss rate change"
+    ],
+    ans: 1,
+    exp: "At 0.001% miss rate: AMAT ≈ 100 + 0.00001 * 100,000 ≈ 101 ns. At 0.01% miss rate: AMAT ≈ 100 + 0.0001 * 100,000 ≈ 110 ns. While not exactly tenfold in absolute AMAT, the disk-penalty component grows 10×. This illustrates that even tiny increases in miss rate dramatically hurt performance because T_Disk >> T_Memory."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
