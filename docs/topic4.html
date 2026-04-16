@@ -68,7 +68,7 @@
   <p class="subtitle">Topic 4: Segmentation &amp; Paging — Memory Virtualization Techniques</p>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
-    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (45 Q)</button>
   </div>
 
   <!-- LESSON SECTION -->
@@ -348,14 +348,14 @@ for (i = 0; i &lt; 1000; i++)
     <div class="score-row">
       <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
       <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
-      <span class="score-val" id="scoreval">0 / 30</span>
+      <span class="score-val" id="scoreval">0 / 45</span>
     </div>
     <div id="questions"></div>
   </div>
 </div>
 
 <script>
-const NQ = 30;
+const NQ = 45;
 const questions = [
   {
     q: "What is the primary inefficiency of the base-and-bounds memory approach?",
@@ -676,6 +676,172 @@ const questions = [
     ],
     ans: 1,
     exp: "The fundamental advantage of paging over segmentation is the elimination of external fragmentation. Because all pages are the same size and match the frame size exactly, any free frame can satisfy any page allocation request — there are no holes that are 'too small.' Segmentation creates variable-sized holes that may not fit new segments, leading to fragmentation and the need for costly compaction."
+  }
+  ,
+  {
+    q: "What is the definition of a \"segment\" in memory management?",
+    opts: [
+      "A fixed-size unit of physical memory.",
+      "A contiguous portion of the address space of a particular length (e.g., code, stack, or heap).",
+      "A list of all free memory locations.",
+      "A hardware register that stores the process ID."
+    ],
+    ans: 1,
+    exp: "A segment is a contiguous portion of the address space, representing logical divisions like code, stack, or heap."
+  },
+  {
+    q: "In segmentation, how is the physical address calculated?",
+    opts: [
+      "Physical Address = Virtual Address + Bounds",
+      "Physical Address = Offset + Base",
+      "Physical Address = VPN + PFN",
+      "Physical Address = Base - Offset"
+    ],
+    ans: 1,
+    exp: "For segments, the hardware calculates the physical address by adding the offset of the virtual address to the base address of that segment."
+  },
+  {
+    q: "What occurs if a program references an illegal address that is beyond the end of a segment?",
+    opts: [
+      "Page Fault",
+      "Timer Interrupt",
+      "Segmentation Fault or Violation",
+      "Context Switch"
+    ],
+    ans: 2,
+    exp: "If an address is out of the bounds of a segment, the hardware detects it and the OS triggers a segmentation fault."
+  },
+  {
+    q: "In the \"Explicit Approach\" to referring to segments, how does the hardware know which segment (code, heap, or stack) is being accessed?",
+    opts: [
+      "It uses the top few bits of the virtual address.",
+      "It checks the process ID.",
+      "It asks the user for a system call.",
+      "It loads the entire address space into the CPU."
+    ],
+    ans: 0,
+    exp: "The hardware \"chops up\" the virtual address and uses the top bits to determine which segment is being referenced."
+  },
+  {
+    q: "Which hardware support is specifically needed for a \"Stack\" segment because it grows in the opposite direction of the heap?",
+    opts: [
+      "A dirty bit",
+      "A bit indicating the growth direction (positive or negative).",
+      "A larger base register",
+      "A global segment table"
+    ],
+    ans: 1,
+    exp: "Because the stack grows backward (negative direction), the hardware must check a bit to determine which way the segment grows."
+  },
+  {
+    q: "What are \"Protection Bits\" used for in segmentation?",
+    opts: [
+      "To indicate permissions such as read, write, and execute for a segment.",
+      "To count how many times a segment has been accessed.",
+      "To prevent the CPU from overheating.",
+      "To store the virtual page number."
+    ],
+    ans: 0,
+    exp: "Protection bits provide extra hardware support to indicate if a segment can be read from, written to, or executed."
+  },
+  {
+    q: "What is \"External Fragmentation\"?",
+    opts: [
+      "When the CPU runs out of registers.",
+      "When a process is blocked by an I/O request.",
+      "Small \"holes\" of free space in physical memory that are too small for new segments.",
+      "When the stack and heap collide."
+    ],
+    ans: 2,
+    exp: "External fragmentation refers to little holes of free space that are not contiguous, making it hard to allocate space for a new segment even if total free memory is sufficient."
+  },
+  {
+    q: "What is the main drawback of \"Memory Compaction\"?",
+    opts: [
+      "It increases the size of the address space.",
+      "It is costly because it requires stopping processes and copying data.",
+      "It deletes all user files.",
+      "It only works for the stack segment."
+    ],
+    ans: 1,
+    exp: "Compaction rearranges segments to eliminate holes, but it is expensive as it involves stopping processes and moving data in memory."
+  },
+  {
+    q: "How does \"Paging\" differ from \"Segmentation\" regarding unit size?",
+    opts: [
+      "Paging uses variable-sized units; Segmentation uses fixed-sized units.",
+      "Paging uses fixed-sized units (pages); Segmentation uses variable-sized units (segments).",
+      "Both use variable-sized units.",
+      "Paging only stores code, while Segmentation stores everything."
+    ],
+    ans: 1,
+    exp: "Paging splits address space into fixed units called pages, whereas segmentation uses variable-sized logical segments."
+  },
+  {
+    q: "What are the two components of a Virtual Address in a paging system?",
+    opts: [
+      "Base and Bound",
+      "VPN (Virtual Page Number) and Offset",
+      "PID and PFN",
+      "Stack Pointer and Program Counter"
+    ],
+    ans: 1,
+    exp: "A virtual address in paging consists of the Virtual Page Number (VPN) and the offset within that page."
+  },
+  {
+    q: "Where are \"Page Tables\" typically stored?",
+    opts: [
+      "Inside the CPU registers",
+      "On the hard drive only",
+      "In physical memory (RAM).",
+      "In the instruction pointer"
+    ],
+    ans: 2,
+    exp: "Because page tables can become very large, they are stored in the system's memory rather than in on-chip registers."
+  },
+  {
+    q: "What does the \"Valid Bit\" in a Page Table Entry (PTE) indicate?",
+    opts: [
+      "Whether the particular translation is valid or in use by the process.",
+      "Whether the page is currently on the disk.",
+      "Whether the page has been modified (written to).",
+      "Whether the process has administrative privileges."
+    ],
+    ans: 0,
+    exp: "The valid bit indicates if a specific virtual-to-physical translation is valid for the running process."
+  },
+  {
+    q: "Which bit in a PTE is used to show that a page has been modified since it was brought into memory?",
+    opts: [
+      "Reference Bit",
+      "Present Bit",
+      "Dirty Bit",
+      "Protection Bit"
+    ],
+    ans: 2,
+    exp: "The dirty bit indicates whether the page's data has been modified."
+  },
+  {
+    q: "Why is basic paging often considered \"Too Slow\"?",
+    opts: [
+      "Because virtual addresses are too long.",
+      "Because it deletes the heap every few milliseconds.",
+      "Because every memory reference requires an extra memory access to the page table.",
+      "Because the CPU cannot read page frames."
+    ],
+    ans: 2,
+    exp: "Paging requires the OS to perform an extra memory reference to fetch the PTE before accessing the actual data, which slows down performance."
+  },
+  {
+    q: "What does the \"Present Bit\" in a PTE represent?",
+    opts: [
+      "Whether the page is read-only.",
+      "Whether the page is currently in physical memory or swapped out to disk.",
+      "Whether the page is the first page of the process.",
+      "Whether the page table is stored in the cache."
+    ],
+    ans: 1,
+    exp: "The present bit indicates if a page is currently residing in physical RAM or if it has been moved to disk storage."
   }
 ];
 let answered = Array(NQ).fill(false);
