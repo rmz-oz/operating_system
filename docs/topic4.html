@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 4: Segmentation &amp; Paging</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 4: Segmentation &amp; Paging — Memory Virtualization Techniques</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>The Problem with Base and Bounds</h2>
+    <p>In the base-and-bounds approach, each process gets a single contiguous region in physical memory defined by a base register and a size (bounds) register. While simple, this has a critical weakness: the <strong>entire address space</strong> — including the large chunk of free space between the heap and stack — must fit in physical memory.</p>
+    <div class="warning-box">
+      <strong>Key inefficiency:</strong> The free space between heap and stack is mapped into physical memory even though no data lives there. This wastes physical RAM. Additionally, if the entire address space does not fit in physical memory, the program cannot run at all.
+    </div>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Address Space Layout</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>0 KB — Code (used)</li>
+          <li>2 KB — Heap (used)</li>
+          <li>4–14 KB — Free space (wasted in physical RAM)</li>
+          <li>14 KB — Stack (used)</li>
+        </ul>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Problems</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Free space occupies physical memory</li>
+          <li>Hard to run programs larger than physical RAM</li>
+          <li>Only one base/bounds pair for the whole space</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Segmentation</h2>
+    <p>Segmentation solves the base-and-bounds inefficiency by giving each <strong>logically distinct region</strong> of the address space its own base and bounds pair. Instead of one pair for the whole process, there is one pair per segment.</p>
+    <div class="info-box">
+      <strong>Definition:</strong> A segment is a contiguous portion of the address space of a particular length. The three classic segments are <strong>Code</strong>, <strong>Heap</strong>, and <strong>Stack</strong>. Each can be placed anywhere in physical memory independently.
+    </div>
+    <p>With segmentation, the segment table might look like this for a process:</p>
+    <pre>Segment   Base    Size
+Code      32 KB   2 KB
+Heap      34 KB   2 KB
+Stack     28 KB   2 KB</pre>
+    <p>The OS can now place each segment in any available region of physical memory. The large "free" space between heap and stack in the virtual address space does not need any physical memory backing.</p>
+
+    <h3>Address Translation with Segmentation</h3>
+    <p>The key formula for translation is:</p>
+    <pre>physical address = offset + base</pre>
+    <p>The <strong>offset</strong> is how far the referenced address is from the start of that segment. For example, virtual address 100 falls in the code segment (which starts at virtual address 0), so the offset is 100. With a base of 32 KB:</p>
+    <pre>physical address = 100 + 32768 = 32868</pre>
+    <p>For the heap, the calculation is slightly different. Virtual address 4200 falls in the heap (which starts at virtual address 4096), so the offset is 4200 - 4096 = 104. With the heap base at 34 KB:</p>
+    <pre>physical address = 104 + 34816 = 34920</pre>
+    <div class="warning-box">
+      <strong>Common mistake:</strong> Do NOT add the raw virtual address to the base. You must first compute the offset within the segment (virtual address minus the segment's starting virtual address), then add the base.
+    </div>
+
+    <h3>Segmentation Fault</h3>
+    <p>If a program accesses an address that lies beyond the end of any valid segment (for example, virtual address 7 KB when the heap ends at 6 KB), the hardware detects an out-of-bounds access. The OS raises a <strong>segmentation fault</strong> and the process is terminated.</p>
+
+    <hr>
+
+    <h2>Referring to Segments — The Explicit Approach</h2>
+    <p>When the hardware receives a virtual address, it must determine <em>which segment</em> the address belongs to. In the explicit approach, the <strong>top few bits</strong> of the virtual address encode the segment number.</p>
+    <p>For a 14-bit virtual address space with 3 segments, the top 2 bits indicate the segment:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Bits 13–12 = 00</div>
+        <p style="font-size:13px">Code segment</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Bits 13–12 = 01</div>
+        <p style="font-size:13px">Heap segment</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Bits 13–12 = 10</div>
+        <p style="font-size:13px">Stack segment</p>
+      </div>
+    </div>
+    <p>Example: virtual address 4200 in binary is <code>01000001101000</code>. Bits 13–12 are <code>01</code> → Heap. The remaining 12 bits give the offset within the heap. The hardware uses:</p>
+    <pre>Segment = (VirtualAddress &amp; SEG_MASK) >> SEG_SHIFT
+Offset  = VirtualAddress &amp; OFFSET_MASK
+if (Offset >= Bounds[Segment])
+    RaiseException(PROTECTION_FAULT)
+else
+    PhysAddr = Base[Segment] + Offset
+    Register = AccessMemory(PhysAddr)</pre>
+    <p>The constants used are: <code>SEG_MASK = 0x3000</code> (top 2 bits), <code>SEG_SHIFT = 12</code>, <code>OFFSET_MASK = 0xFFF</code> (bottom 12 bits).</p>
+
+    <hr>
+
+    <h2>Stack and Sharing Support in Segmentation</h2>
+    <h3>Stack Grows Backwards</h3>
+    <p>The stack grows in the negative direction (toward lower addresses). The hardware needs extra support — a <strong>Grows Positive</strong> bit per segment — to handle this correctly.</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Grows Positive = 1 (Code, Heap)</div>
+        <p style="font-size:13px;line-height:1.6">Offset is measured forward from the base. Normal translation applies.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Grows Positive = 0 (Stack)</div>
+        <p style="font-size:13px;line-height:1.6">Offset is measured backward. The hardware subtracts to find the correct negative offset from the segment base.</p>
+      </div>
+    </div>
+
+    <h3>Segment Sharing and Protection Bits</h3>
+    <p>Two different address spaces can share the same physical segment (e.g., a read-only code segment shared between two processes running the same program). This requires <strong>protection bits</strong> per segment:</p>
+    <pre>Segment   Base   Size   Grows Positive?   Protection
+Code      32 KB  2 KB   1                 Read-Execute
+Heap      34 KB  2 KB   1                 Read-Write
+Stack     28 KB  2 KB   0                 Read-Write</pre>
+
+    <hr>
+
+    <h2>Coarse-Grained vs. Fine-Grained Segmentation</h2>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Coarse-Grained</div>
+        <p style="font-size:13px;line-height:1.6">Small number of segments — code, heap, stack. Simple, but inflexible. Supported by a few hardware registers.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Fine-Grained</div>
+        <p style="font-size:13px;line-height:1.6">Many segments — greater flexibility for the address space layout. Requires a hardware-supported <strong>segment table</strong> in memory.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>External Fragmentation — The Problem with Segmentation</h2>
+    <p>Over time, as processes start and stop, physical memory develops many small holes of free space between segments. This is called <strong>external fragmentation</strong>.</p>
+    <div class="info-box">
+      <strong>Example:</strong> There may be 24 KB free total, but split into 3 separate 8 KB holes. A new segment requiring 20 KB of contiguous space cannot be allocated even though 24 KB is nominally free.
+    </div>
+    <p>One solution is <strong>compaction</strong>: stop all processes, copy their data to compact segments together, and update all segment registers. Compaction is <em>costly</em> — it involves stopping processes, copying large amounts of data, and rewriting hardware registers. Modern systems prefer paging instead.</p>
+
+    <hr>
+
+    <h2>Paging — Introduction</h2>
+    <p>Paging takes a different approach: instead of variable-sized segments, it divides both the virtual address space and physical memory into <strong>fixed-size units</strong>.</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Virtual Address Space</div>
+        <p style="font-size:13px;line-height:1.6">Split into fixed-size units called <strong>pages</strong>.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Physical Memory</div>
+        <p style="font-size:13px;line-height:1.6">Split into fixed-size units called <strong>page frames</strong>. Pages and page frames are the same size.</p>
+      </div>
+    </div>
+    <div class="success-box">
+      <strong>Advantages of Paging:</strong><br>
+      1. <strong>Flexibility</strong> — no assumption about how heap/stack grow; address space abstraction is easy.<br>
+      2. <strong>Simplicity</strong> — all pages are the same size, so free-space management is trivial (just a free list of available frames).
+    </div>
+
+    <h3>Example: Simple Paging</h3>
+    <p>Consider a 64-byte address space with 16-byte pages (4 pages: 0–3) and a 128-byte physical memory with 16-byte frames (8 frames: 0–7). The OS keeps a <strong>page table</strong> per process mapping virtual page numbers (VPNs) to physical frame numbers (PFNs):</p>
+    <pre>Virtual Page 0 → Physical Frame 3
+Virtual Page 1 → Physical Frame 7
+Virtual Page 2 → Physical Frame 5
+Virtual Page 3 → Physical Frame 2</pre>
+    <p>The pages can be scattered throughout physical memory in any available frames — there is no requirement for contiguity.</p>
+
+    <hr>
+
+    <h2>Address Translation in Paging</h2>
+    <p>A virtual address is split into two fields:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">VPN — Virtual Page Number</div>
+        <p style="font-size:13px;line-height:1.6">The top bits of the virtual address. Used as an index into the page table to find the physical frame number.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Offset</div>
+        <p style="font-size:13px;line-height:1.6">The bottom bits of the virtual address. Identifies the byte within the page. Copied unchanged into the physical address.</p>
+      </div>
+    </div>
+    <p>Example: virtual address 21 in a 64-byte address space (6-bit addresses, 4-bit pages, 4-bit offset). In binary: <code>010101</code>. VPN = <code>01</code> = page 1 → frame 7. Offset = <code>0101</code> = 5. Physical address = frame 7 start (112) + 5 = <strong>117</strong>.</p>
+    <pre>VPN    = (VirtualAddress &amp; VPN_MASK) >> SHIFT
+PTEAddr = PTBR + (VPN * sizeof(PTE))   // Page Table Base Register
+PTE    = AccessMemory(PTEAddr)
+if (PTE.Valid == False)
+    RaiseException(SEGMENTATION_FAULT)
+else if (CanAccess(PTE.ProtectBits) == False)
+    RaiseException(PROTECTION_FAULT)
+else
+    offset  = VirtualAddress &amp; OFFSET_MASK
+    PhysAddr = (PTE.PFN &lt;&lt; PFN_SHIFT) | offset
+    Register = AccessMemory(PhysAddr)</pre>
+
+    <hr>
+
+    <h2>Where Are Page Tables Stored?</h2>
+    <p>Page tables can be <em>very large</em>. For a 32-bit address space with 4 KB pages:</p>
+    <ul>
+      <li>Page offset = 12 bits (log2 of 4096)</li>
+      <li>VPN = 20 bits → 2<sup>20</sup> = about 1 million entries</li>
+      <li>At 4 bytes per entry: <strong>4 MB per process</strong></li>
+    </ul>
+    <p>Because page tables are too large to fit in hardware registers, they are stored in <strong>main memory</strong> (usually in kernel-controlled space). The CPU holds a <strong>Page Table Base Register (PTBR)</strong> that points to the start of the current process's page table in memory.</p>
+    <div class="warning-box">
+      <strong>Performance cost:</strong> Every memory access now requires <em>two</em> memory accesses — one to fetch the PTE from the page table, and one to access the actual data. This makes paging slow without additional hardware support (TLB, covered in Topic 5).
+    </div>
+
+    <hr>
+
+    <h2>Page Table Entry (PTE) Flags</h2>
+    <p>Each entry in the page table stores the Physical Frame Number (PFN) plus several flag bits:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Valid Bit</div>
+        <p style="font-size:13px;line-height:1.6">Indicates whether this translation is valid. If clear and the process accesses this page, a fault is raised.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Protection Bit</div>
+        <p style="font-size:13px;line-height:1.6">Encodes read/write/execute permissions for the page.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Present Bit</div>
+        <p style="font-size:13px;line-height:1.6">Indicates whether the page is currently in physical memory or has been swapped to disk.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Dirty Bit &amp; Reference Bit</div>
+        <p style="font-size:13px;line-height:1.6">Dirty: page has been written since loaded. Reference/Accessed: page has been read. Used by page-replacement algorithms.</p>
+      </div>
+    </div>
+    <p>An x86 Page Table Entry packs many of these flags into a 32-bit word alongside the PFN. Key x86 bits: <strong>P</strong> (present), <strong>R/W</strong> (read/write), <strong>U/S</strong> (user/supervisor), <strong>A</strong> (accessed), <strong>D</strong> (dirty).</p>
+
+    <hr>
+
+    <h2>Paging is Too Slow — A Memory Trace</h2>
+    <p>Consider a simple loop over an array in C:</p>
+    <pre>int array[1000];
+for (i = 0; i &lt; 1000; i++)
+    array[i] = 0;</pre>
+    <p>This compiles to 4 assembly instructions that repeat 1000 times:</p>
+    <pre>0x1024  movl $0x0,(%edi,%eax,4)   // store 0 to array[i]
+0x1028  incl %eax                  // i++
+0x102c  cmpl $0x03e8,%eax          // compare i to 1000
+0x1030  jne  0x1024                // loop back if not done</pre>
+    <p>With paging, <strong>every single memory reference</strong> triggers an extra memory access to fetch the PTE. For the 4 code instructions plus 1 array write per iteration, that is 5 user memory accesses → 5 additional page table lookups per iteration. For 1000 iterations, thousands of extra memory references just for page table walks — a significant overhead.</p>
+    <div class="info-box">
+      <strong>Solution preview:</strong> The Translation Lookaside Buffer (TLB) — a hardware cache for page table entries — is the primary solution to this performance problem (covered in later topics).
+    </div>
+
+    <hr>
+
+    <h2>Segmentation vs. Paging — Summary Comparison</h2>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Segmentation</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Variable-sized segments</li>
+          <li>Few base/bounds register pairs</li>
+          <li>Supports code, heap, stack naturally</li>
+          <li>Causes external fragmentation</li>
+          <li>Compaction is the fix (costly)</li>
+          <li>Used in early x86 systems</li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Paging</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Fixed-size pages (no fragmentation holes)</li>
+          <li>Requires a per-process page table in memory</li>
+          <li>No assumption about heap/stack growth</li>
+          <li>Eliminates external fragmentation</li>
+          <li>Extra memory access per reference (needs TLB)</li>
+          <li>Used in modern x86-64 systems</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 30</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 30;
+const questions = [
+  {
+    q: "What is the primary inefficiency of the base-and-bounds memory approach?",
+    opts: [
+      "It requires a separate CPU register for every byte of memory",
+      "The large free space between the heap and stack must occupy physical memory even though it holds no data",
+      "It does not allow multiple processes to run at the same time",
+      "Address translation takes too many CPU cycles"
+    ],
+    ans: 1,
+    exp: "With base-and-bounds, the entire virtual address space — including unused free space between heap and stack — must be mapped to a contiguous region of physical memory. That free space wastes physical RAM and makes it hard to run programs whose address space is larger than available physical memory."
+  },
+  {
+    q: "What is a segment in the context of memory management?",
+    opts: [
+      "A fixed-size chunk of physical memory assigned to a process",
+      "A contiguous portion of the address space of a particular length, such as code, heap, or stack",
+      "A hardware register that stores the base address of the entire process",
+      "A page table entry that maps a virtual page to a physical frame"
+    ],
+    ans: 1,
+    exp: "A segment is a logically distinct contiguous region of the virtual address space — typically code, heap, or stack. Segmentation gives each segment its own base and bounds, allowing them to be placed independently in physical memory."
+  },
+  {
+    q: "In segmentation, how is the physical address of a reference computed?",
+    opts: [
+      "physical address = virtual address + base",
+      "physical address = virtual address * page size",
+      "physical address = offset within segment + segment base",
+      "physical address = VPN * frame size + offset"
+    ],
+    ans: 2,
+    exp: "The correct formula is: physical address = offset + base. The offset is how far the referenced virtual address is from the start of its segment (not the raw virtual address). Adding the raw virtual address to the base would be incorrect because the segment may not start at virtual address 0."
+  },
+  {
+    q: "A heap segment has base = 34 KB and starts at virtual address 4096. What is the physical address of virtual address 4200?",
+    opts: [
+      "4200 + 34816 = 39016",
+      "104 + 34816 = 34920",
+      "4200 + 32768 = 36968",
+      "4096 + 34816 = 38912"
+    ],
+    ans: 1,
+    exp: "The offset within the heap is 4200 - 4096 = 104. Physical address = 104 + 34 * 1024 = 104 + 34816 = 34920. You must subtract the segment's starting virtual address to get the offset; adding the raw virtual address (4200) to the base would be wrong."
+  },
+  {
+    q: "What happens when a program references virtual address 7 KB if the heap segment ends at 6 KB?",
+    opts: [
+      "The OS allocates more heap memory automatically",
+      "The hardware raises a segmentation fault",
+      "The reference wraps around to address 1 KB",
+      "The OS swaps another segment out to make room"
+    ],
+    ans: 1,
+    exp: "A reference beyond the bounds of a valid segment is illegal. The hardware detects the out-of-bounds access and raises a segmentation fault. The process is then terminated by the OS."
+  },
+  {
+    q: "In the explicit segment identification approach, how does the hardware determine which segment a virtual address belongs to?",
+    opts: [
+      "It searches all segment base registers and picks the closest one",
+      "It uses the top few bits of the virtual address as a segment number",
+      "It reads a segment descriptor from a table in memory",
+      "It checks the protection bits of every page table entry"
+    ],
+    ans: 1,
+    exp: "The explicit approach encodes the segment number in the top few bits of the virtual address. For example, in a 14-bit address space with 3 segments, bits 13-12 specify the segment (00 = code, 01 = heap, 10 = stack) and the remaining bits are the offset within that segment."
+  },
+  {
+    q: "For a 14-bit virtual address with SEG_MASK = 0x3000, SEG_SHIFT = 12, and OFFSET_MASK = 0xFFF, what does the expression (VirtualAddress & SEG_MASK) >> SEG_SHIFT compute?",
+    opts: [
+      "The physical frame number",
+      "The offset within the segment",
+      "The segment number",
+      "The size of the segment in bytes"
+    ],
+    ans: 2,
+    exp: "SEG_MASK 0x3000 isolates the top 2 bits (bits 13 and 12). Right-shifting by SEG_SHIFT (12) moves those bits to positions 1-0, giving the segment number (0, 1, 2, or 3). This tells the hardware which segment's base register to use."
+  },
+  {
+    q: "Why does the stack segment require special hardware support that the code and heap segments do not?",
+    opts: [
+      "The stack holds executable code that must be protected from writes",
+      "The stack grows in the negative direction (toward lower addresses), requiring the hardware to compute negative offsets",
+      "The stack is always larger than the heap and needs extra bounds checking",
+      "The stack cannot be shared between processes"
+    ],
+    ans: 1,
+    exp: "Unlike code and heap which grow toward higher addresses, the stack grows downward. The hardware uses a 'Grows Positive' bit per segment: set to 1 for code/heap (normal direction) and 0 for stack (negative direction). With this bit, the hardware knows to compute the offset differently for the stack."
+  },
+  {
+    q: "A segment register table shows: Code base=32K, Heap base=34K, Stack base=28K; all size=2K; Grows Positive: Code=1, Heap=1, Stack=0. Which value in the Grows Positive column is correct for the stack?",
+    opts: ["1", "0", "2", "-1"],
+    ans: 1,
+    exp: "The stack grows in the negative direction, so its Grows Positive bit is 0. Code and heap grow toward higher addresses and have Grows Positive = 1. The hardware uses this bit to compute offsets correctly for the stack."
+  },
+  {
+    q: "What is code sharing in segmented memory, and what hardware feature enables it?",
+    opts: [
+      "Two processes execute the same process ID simultaneously using CPU time-sharing",
+      "Two address spaces map to the same physical code segment; protection bits enforce read-execute only access",
+      "The compiler duplicates code into both the heap and stack segments",
+      "The OS copies code pages from disk to RAM whenever a process starts"
+    ],
+    ans: 1,
+    exp: "Segment sharing lets two different virtual address spaces point to the same physical memory region — typically a read-only code segment. Protection bits (read/write/execute permissions) prevent the shared code from being modified. Code sharing is still used in modern systems to avoid duplicating libraries."
+  },
+  {
+    q: "What is external fragmentation?",
+    opts: [
+      "Fragmentation caused by fixed-size page tables that waste memory",
+      "Unused space inside an allocated segment because the segment is larger than needed",
+      "Many small holes of free space scattered in physical memory that are too small to satisfy new allocation requests",
+      "Memory lost because the stack and heap overlap"
+    ],
+    ans: 2,
+    exp: "External fragmentation occurs when free physical memory is split into many small non-contiguous holes by segments of varying sizes. Even if total free memory is sufficient, no single hole may be large enough for a new segment. For example, 24 KB free in three 8 KB holes cannot satisfy a 20 KB request."
+  },
+  {
+    q: "What is compaction, and why is it considered costly?",
+    opts: [
+      "Compressing data with gzip before storing it on disk — costly because compression is CPU-intensive",
+      "Rearranging existing segments in physical memory to eliminate fragmentation — costly because it stops processes and copies data",
+      "Splitting large segments into smaller fixed-size pieces — costly because it requires a segment table",
+      "Merging multiple page tables into one — costly because of cache invalidation"
+    ],
+    ans: 1,
+    exp: "Compaction physically moves all allocated segments together, eliminating fragmentation holes. It is expensive because the OS must stop running processes, copy potentially large amounts of data to new locations, and update all segment register values. Modern systems avoid compaction by using paging instead."
+  },
+  {
+    q: "What is a page in paging-based memory management?",
+    opts: [
+      "A variable-sized logical region of the address space such as code, heap, or stack",
+      "A fixed-size unit into which both the virtual address space and physical memory are divided",
+      "A hardware register that stores the physical base address of a process",
+      "An entry in the segment table that maps a segment to physical memory"
+    ],
+    ans: 1,
+    exp: "Paging divides both the virtual address space and physical memory into fixed-size units. The virtual units are called pages; the physical units are called page frames. Pages and frames are always the same size, which eliminates external fragmentation."
+  },
+  {
+    q: "What are the two main advantages of paging over segmentation?",
+    opts: [
+      "Faster translation and smaller page tables",
+      "Flexibility (no assumption about heap/stack growth) and simplicity (easy free-space management with a free list of equal-sized frames)",
+      "Supports code sharing and requires fewer hardware registers",
+      "Eliminates the need for a page table and supports negative-direction growth natively"
+    ],
+    ans: 1,
+    exp: "Paging's two key advantages stated in the slides are: (1) Flexibility — the OS does not need to assume how heap and stack grow or are used; (2) Simplicity — because pages and frames are the same size, free-space management is trivial (just a free list of available frames)."
+  },
+  {
+    q: "In a 64-byte address space with 16-byte pages, how many pages exist and how many bits are needed for the offset?",
+    opts: [
+      "8 pages, 3 offset bits",
+      "4 pages, 4 offset bits",
+      "16 pages, 6 offset bits",
+      "2 pages, 5 offset bits"
+    ],
+    ans: 1,
+    exp: "64 bytes / 16 bytes per page = 4 pages. The offset within a 16-byte page requires log2(16) = 4 bits. The VPN requires log2(4) = 2 bits. Total address width = 6 bits, which matches a 64-byte address space."
+  },
+  {
+    q: "A virtual address is split into VPN and offset. What is the purpose of the VPN?",
+    opts: [
+      "It identifies the byte within the page",
+      "It is an index into the page table to look up the physical frame number",
+      "It stores the protection bits for the page",
+      "It is the starting physical address of the page table"
+    ],
+    ans: 1,
+    exp: "The Virtual Page Number (VPN) is the top portion of the virtual address. The OS uses it as an index into the process's page table to find the corresponding Physical Frame Number (PFN). The offset then selects the exact byte within that frame."
+  },
+  {
+    q: "In address translation with paging, what happens to the offset portion of the virtual address?",
+    opts: [
+      "It is discarded; only the VPN is needed",
+      "It is replaced by the PFN from the page table",
+      "It is copied unchanged into the physical address",
+      "It is added to the VPN to form the final physical address"
+    ],
+    ans: 2,
+    exp: "The offset identifies the byte within the page, and because pages and frames are the same size, the offset is identical in both the virtual and physical address. The physical address = (PFN << PFN_SHIFT) | offset. The offset is carried directly from the virtual address."
+  },
+  {
+    q: "Virtual address 21 in a 64-byte address space (4 pages of 16 bytes). VPN = 1, page 1 maps to frame 7. What is the physical address?",
+    opts: ["21", "117", "112", "7"],
+    ans: 1,
+    exp: "VPN = 1 maps to physical frame 7. Frame 7 starts at 7 * 16 = 112. The offset = 21 - 1*16 = 5. Physical address = 112 + 5 = 117. In binary: VPN=01, offset=0101 → PFN=0111, offset=0101 → physical = 1110101 = 117."
+  },
+  {
+    q: "Why are page tables stored in main memory rather than in hardware registers?",
+    opts: [
+      "Main memory is faster than hardware registers",
+      "Page tables are too large — a 32-bit address space with 4 KB pages needs 4 MB per process, too large for hardware registers",
+      "Hardware registers do not support random access needed for VPN indexing",
+      "Storing page tables in registers would make context switching impossible"
+    ],
+    ans: 1,
+    exp: "A 32-bit address space with 4 KB pages has 2^20 entries (~1 million). At 4 bytes per entry that is 4 MB of page table per process. This is far too large to fit in hardware registers (like base/bounds). Instead, page tables live in kernel memory and the CPU holds a Page Table Base Register (PTBR) that points to the table."
+  },
+  {
+    q: "What does the Page Table Base Register (PTBR) store?",
+    opts: [
+      "The physical frame number of the most recently accessed page",
+      "The starting physical address of the current process's page table in memory",
+      "The number of valid entries in the current page table",
+      "The virtual address of the first instruction of the current process"
+    ],
+    ans: 1,
+    exp: "The PTBR holds the physical address of the beginning of the current process's page table. When translating a virtual address, the hardware computes PTEAddr = PTBR + (VPN * sizeof(PTE)) to find the right page table entry in memory."
+  },
+  {
+    q: "What is the performance cost of naive paging (without hardware acceleration)?",
+    opts: [
+      "Every memory access requires two memory references: one for the PTE, one for the actual data",
+      "Every context switch requires copying the entire page table to hardware registers",
+      "The CPU must execute a software page-table walk for every instruction fetch",
+      "Physical memory becomes fragmented because all frames are the same size"
+    ],
+    ans: 0,
+    exp: "Without a TLB or other cache, every memory access in paged systems requires: (1) fetching the PTE from the page table in memory, and (2) accessing the actual data at the translated physical address. This doubles the memory traffic and significantly slows execution."
+  },
+  {
+    q: "What does the Valid Bit in a page table entry indicate?",
+    opts: [
+      "Whether the page has been recently accessed",
+      "Whether the page has been modified since being loaded into memory",
+      "Whether the virtual-to-physical translation for this page is valid (the page is mapped)",
+      "Whether the page is currently in physical memory or on disk"
+    ],
+    ans: 2,
+    exp: "The Valid Bit marks whether the PTE represents a legitimate mapping. If a process accesses a virtual page whose PTE has Valid=0, a fault is raised. Note: the Present Bit (separate) indicates whether the page is in RAM or swapped to disk."
+  },
+  {
+    q: "What does the Dirty Bit in a page table entry record?",
+    opts: [
+      "That the page contains executable code",
+      "That the page has been written to since it was loaded into memory",
+      "That the page frame is currently free and can be allocated",
+      "That the page was loaded from disk rather than from another process"
+    ],
+    ans: 1,
+    exp: "The Dirty Bit is set when the page has been modified (written to) since being loaded. It is used by the OS to decide whether the page needs to be written back to disk before its frame is reused — if the bit is clear, the page is identical to its disk copy and can simply be discarded."
+  },
+  {
+    q: "What does the Reference (Accessed) Bit in a page table entry track?",
+    opts: [
+      "The number of times a page has been accessed",
+      "Whether the page has been read or accessed at all since the bit was last cleared",
+      "Whether the page is shared between two or more processes",
+      "Whether the page belongs to the kernel or to a user process"
+    ],
+    ans: 1,
+    exp: "The Reference/Accessed Bit is set by the hardware whenever the page is accessed (read or written). Page-replacement algorithms use this bit to identify which pages are hot (recently used) versus cold (not accessed), helping the OS choose which page to evict when physical memory is full."
+  },
+  {
+    q: "In the x86 page table entry (PTE), what does the P bit indicate?",
+    opts: [
+      "The page has protection enabled",
+      "The page is present in physical memory",
+      "The page is private (not shared)",
+      "The page belongs to a privileged (kernel) process"
+    ],
+    ans: 1,
+    exp: "In x86 terminology, P stands for Present. If P=1, the page is in physical memory and the PFN field is valid. If P=0, the page has been swapped to disk and accessing it will trigger a page fault, causing the OS to bring the page back into memory."
+  },
+  {
+    q: "For the loop 'for (i = 0; i < 1000; i++) array[i] = 0;', approximately how many extra memory accesses does paging cause per loop iteration (without a TLB)?",
+    opts: [
+      "1 — only for the array write",
+      "4 — one per assembly instruction",
+      "At least 5 — one PTE fetch for each of the 4 code instructions plus 1 for the array write",
+      "1000 — one per iteration total"
+    ],
+    ans: 2,
+    exp: "Without a TLB, every memory reference triggers an extra memory access to fetch the PTE. Each loop iteration involves 4 code instruction fetches + 1 data write to the array = 5 memory references, each requiring a PTE lookup. That is at least 5 extra memory accesses per iteration — thousands of additional accesses over the full 1000-iteration loop."
+  },
+  {
+    q: "Which modern hardware architecture uses paging (not segmentation) as its primary memory virtualization strategy?",
+    opts: [
+      "Early x86 (16-bit) systems",
+      "x86 32-bit systems exclusively",
+      "x86-64 (modern 64-bit) systems",
+      "RISC-V systems only"
+    ],
+    ans: 2,
+    exp: "Early x86 systems used segmentation, and 32-bit x86 used a combination of both. Modern x86-64 systems use paging as the primary virtual memory mechanism. Segmentation is largely vestigial in 64-bit mode — segment descriptors exist but most are set with base 0 and limit covering the full address space."
+  },
+  {
+    q: "What is the key difference between the Coarse-Grained and Fine-Grained segmentation approaches?",
+    opts: [
+      "Coarse-grained uses large page sizes; fine-grained uses small page sizes",
+      "Coarse-grained has a small number of segments (code, heap, stack); fine-grained supports many segments and requires a hardware segment table",
+      "Coarse-grained requires a page table; fine-grained uses base/bounds registers",
+      "Coarse-grained is used in modern systems; fine-grained is only historical"
+    ],
+    ans: 1,
+    exp: "Coarse-grained segmentation divides the address space into a small number of segments (typically code, heap, stack) managed by a few hardware registers. Fine-grained segmentation supports many more segments for greater flexibility, but requires a hardware-accessible segment table in memory to store all the base/bounds pairs."
+  },
+  {
+    q: "A 32-bit address space uses 4 KB pages. How many bits are used for the page offset and how many for the VPN?",
+    opts: [
+      "10 bits offset, 22 bits VPN",
+      "12 bits offset, 20 bits VPN",
+      "16 bits offset, 16 bits VPN",
+      "8 bits offset, 24 bits VPN"
+    ],
+    ans: 1,
+    exp: "A 4 KB page = 2^12 bytes, so 12 bits are needed for the offset to address any byte within a page. The remaining 32 - 12 = 20 bits form the VPN. This gives 2^20 = about 1 million possible virtual pages, requiring a page table with about 1 million entries (4 MB at 4 bytes each)."
+  },
+  {
+    q: "What is the primary reason modern operating systems prefer paging over segmentation?",
+    opts: [
+      "Paging is faster because it uses only one hardware register",
+      "Paging eliminates external fragmentation because all pages and frames are fixed and equal size",
+      "Paging supports code sharing while segmentation does not",
+      "Paging requires less memory for the translation data structures"
+    ],
+    ans: 1,
+    exp: "The fundamental advantage of paging over segmentation is the elimination of external fragmentation. Because all pages are the same size and match the frame size exactly, any free frame can satisfy any page allocation request — there are no holes that are 'too small.' Segmentation creates variable-sized holes that may not fit new segments, leading to fragmentation and the need for costly compaction."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
