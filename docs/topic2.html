@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 2: Process, Process API & Limited Direct Execution</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 2: Process, Process API &amp; Limited Direct Execution</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>What is a Process?</h2>
+    <p>One of the most fundamental abstractions an OS provides is the <strong>process</strong> — simply defined as a <em>running program</em>. A program sitting on disk is just bytes; when the OS loads it and begins executing its instructions, it becomes a process.</p>
+    <p>To characterize a process fully, we identify everything the system accesses or affects during its execution:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Memory (Address Space)</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Instructions (text/code)</li>
+          <li>Data section (globals &amp; statics)</li>
+          <li>Heap (dynamic allocations)</li>
+          <li>Stack (local variables, return addresses)</li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">CPU State (Registers)</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Program Counter (PC / Instruction Pointer)</li>
+          <li>Stack Pointer</li>
+          <li>General-purpose registers</li>
+          <li>I/O information (open file descriptors)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>CPU Virtualization:</strong> The OS creates the illusion that many virtual CPUs exist by <em>time sharing</em> — running one process for a short while, stopping it, and running another. The potential cost is performance overhead.
+    </div>
+
+    <hr>
+
+    <h2>Process Address Space</h2>
+    <p>Every process is given its own <strong>private virtual address space</strong>, isolated from all other processes. This guarantees stability and security. The address space is organized into well-defined segments:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Text &amp; Data</div>
+        <p style="font-size:13px;line-height:1.6"><strong>Text:</strong> executable code of the program.<br><strong>Data:</strong> global and static variables.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Heap</div>
+        <p style="font-size:13px;line-height:1.6">Dynamic memory allocation. Grows upward. Managed with <code>malloc()</code> / <code>free()</code>.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Stack</div>
+        <p style="font-size:13px;line-height:1.6">Function call frames, local variables, return addresses. Grows downward.</p>
+      </div>
+    </div>
+    <p>A fourth segment, the <strong>memory-mapped segment</strong>, stores shared libraries, dynamically loaded modules, and memory-mapped files.</p>
+
+    <hr>
+
+    <h2>Process Creation: From Program to Process</h2>
+    <p>When the OS creates a new process it follows a specific sequence of steps:</p>
+    <div class="flow" style="grid-template-columns: repeat(5, 1fr)">
+      <div class="flow-step"><div class="step-num">1</div><p><strong>Load</strong><br>Copy code &amp; data from disk into memory (lazily)</p></div>
+      <div class="flow-step"><div class="step-num">2</div><p><strong>Stack</strong><br>Allocate run-time stack; initialize with argv/argc</p></div>
+      <div class="flow-step"><div class="step-num">3</div><p><strong>Heap</strong><br>Create the heap for dynamic allocations</p></div>
+      <div class="flow-step"><div class="step-num">4</div><p><strong>I/O</strong><br>Open stdin, stdout, stderr (file descriptors 0, 1, 2)</p></div>
+      <div class="flow-step"><div class="step-num">5</div><p><strong>Start</strong><br>Transfer control to <code>main()</code></p></div>
+    </div>
+    <div class="info-box">
+      <strong>Lazy loading:</strong> The OS does not load the entire program into memory before starting it. Instead it loads pieces of code and data <em>only as they are needed</em> during execution, keeping startup fast and memory usage low.
+    </div>
+
+    <hr>
+
+    <h2>Process States</h2>
+    <p>At any instant a process is in one of three states:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Running</div>
+        <p style="font-size:13px;line-height:1.6">The process is executing instructions on a processor right now.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Ready</div>
+        <p style="font-size:13px;line-height:1.6">The process is ready to run but the OS has chosen not to run it at this moment.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Blocked</div>
+        <p style="font-size:13px;line-height:1.6">The process is waiting for an event (e.g. I/O completion) and cannot run until that event occurs.</p>
+      </div>
+    </div>
+    <p>The transitions between states follow fixed rules:</p>
+    <ul>
+      <li><strong>Running → Ready:</strong> descheduled (time-slice expiration or higher-priority process arrives)</li>
+      <li><strong>Ready → Running:</strong> scheduled by the OS</li>
+      <li><strong>Running → Blocked:</strong> process initiates I/O (or other wait)</li>
+      <li><strong>Blocked → Ready:</strong> I/O completes</li>
+    </ul>
+
+    <hr>
+
+    <h2>Process Control Block (PCB) &amp; Data Structures</h2>
+    <p>The OS is itself a program and it tracks every process using a data structure called the <strong>Process Control Block (PCB)</strong>. The OS maintains a <em>process list</em> that holds PCBs for all ready, blocked, and currently running processes.</p>
+    <p>A typical PCB contains:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Identity &amp; State</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Process ID (PID)</li>
+          <li>Process state (running / ready / blocked)</li>
+          <li>Parent/child process references</li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">CPU &amp; Memory Context</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Program Counter (PC)</li>
+          <li>Saved register values</li>
+          <li>Memory info (base/limit, page tables)</li>
+          <li>I/O info (open files, devices)</li>
+          <li>CPU scheduling info (priority, time quantum)</li>
+        </ul>
+      </div>
+    </div>
+    <p>The xv6 kernel uses a <code>struct proc</code> as its PCB and a separate <code>struct context</code> to save the registers needed to resume a process:</p>
+    <pre>struct context {
+    int eip;  // Index pointer register
+    int esp;  // Stack pointer register
+    int ebx;  // Base register
+    int ecx;  // Counter register
+    int edx;  // Data register
+    int esi;  // Source index register
+    int edi;  // Destination index register
+    int ebp;  // Stack base pointer register
+};</pre>
+    <p>Process states in xv6: <code>UNUSED</code>, <code>EMBRYO</code>, <code>SLEEPING</code>, <code>RUNNABLE</code>, <code>RUNNING</code>, <code>ZOMBIE</code>.</p>
+
+    <hr>
+
+    <h2>Process API: fork(), wait(), exec()</h2>
+
+    <h3>fork() — Create a Child Process</h3>
+    <p><code>fork()</code> creates an almost exact copy of the calling process. After <code>fork()</code> returns, there are two processes running, both about to return from the call. The child gets its own separate memory space (same initial contents), its own registers and PC.</p>
+    <div class="success-box">
+      <strong>Return value rule:</strong> <code>fork()</code> returns the child's PID to the <em>parent</em>, and returns <code>0</code> to the <em>child</em>. A negative return means fork failed. This return-value difference is the standard way to distinguish parent from child code paths.
+    </div>
+    <pre>int rc = fork();
+if (rc &lt; 0) {
+    fprintf(stderr, "fork failed\n"); exit(1);
+} else if (rc == 0) {
+    // child process
+    printf("hello, I am child (pid:%d)\n", (int) getpid());
+} else {
+    // parent process
+    printf("hello, I am parent of %d (pid:%d)\n", rc, (int) getpid());
+}</pre>
+    <div class="warning-box">
+      <strong>Non-deterministic ordering:</strong> The CPU scheduler decides which process (parent or child) runs first after <code>fork()</code>. Output order is not guaranteed without explicit synchronization.
+    </div>
+
+    <h3>wait() — Synchronize with a Child</h3>
+    <p><code>wait()</code> makes the parent block until one of its child processes exits. This enforces ordering: if the parent calls <code>wait()</code>, the child always finishes and prints first, making execution deterministic.</p>
+    <pre>int wc = wait(NULL);
+printf("hello, I am parent of %d (wc:%d) (pid:%d)\n",
+       rc, wc, (int) getpid());</pre>
+
+    <h3>exec() — Replace Process Image</h3>
+    <p><code>exec()</code> (e.g. <code>execvp()</code>) replaces the current process's memory with a completely new program. It takes the binary name and an argument array. Crucially, <strong>exec() does not return</strong> on success — the process is now running the new program.</p>
+    <pre>char *myargs[3];
+myargs[0] = strdup("wc");    // program to run
+myargs[1] = strdup("p3.c"); // argument
+myargs[2] = NULL;            // end of args
+execvp(myargs[0], myargs);  // replaces this process with "wc"
+printf("this should NOT print");</pre>
+    <div class="info-box">
+      <strong>Why separate fork() and exec()?</strong> The gap between the two calls lets the shell manipulate the child's environment before the new program starts — for example, redirecting I/O or setting up pipes.
+    </div>
+
+    <h3>I/O Redirection and Pipes</h3>
+    <p>Shell commands like <code>wc p3.c &gt; out.txt</code> work by: (1) <code>fork()</code>ing a child, (2) closing <code>STDOUT_FILENO</code> in the child, (3) opening the output file (which gets file descriptor 1 because it is the lowest available), and then (4) calling <code>exec("wc", ...)</code>. The <code>wc</code> program writes to stdout not knowing it has been redirected.</p>
+    <p><strong>Pipes</strong> (<code>|</code>) connect the STDOUT of one process to the STDIN of another. Advantages over redirection with temporary files: automatic cleanup, no disk space required, and reader/writer proceed in parallel.</p>
+
+    <hr>
+
+    <h2>Limited Direct Execution</h2>
+    <p>The OS wants to run programs as fast as possible (<em>direct execution</em>), but must remain in control. This tension defines the <strong>Limited Direct Execution (LDE)</strong> protocol.</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Challenge 1: Restricted Operations</div>
+        <p style="font-size:13px;line-height:1.6">A user process must not be able to directly access all hardware resources. How do we allow useful operations while preventing dangerous ones?</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Challenge 2: Switching Between Processes</div>
+        <p style="font-size:13px;line-height:1.6">Once a process is running, how does the OS regain control of the CPU so it can switch to another process?</p>
+      </div>
+    </div>
+
+    <h3>Solution to Challenge 1: Processor Modes &amp; System Calls</h3>
+    <p>Hardware provides two privilege levels:</p>
+    <div class="compare-grid">
+      <div class="card card-amber">
+        <div class="card-title">User Mode</div>
+        <p style="font-size:13px;line-height:1.6">Applications run here. Restricted access to hardware. Cannot directly issue I/O, modify OS data structures, or change privilege level.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Kernel Mode</div>
+        <p style="font-size:13px;line-height:1.6">OS runs here. Full access to all hardware resources and privileged instructions.</p>
+      </div>
+    </div>
+    <p>When a user process needs a privileged operation it executes a <strong>trap instruction</strong> (<code>int n</code>). This raises the privilege level to kernel mode, saves registers on the kernel stack, and jumps to the OS's <strong>trap handler</strong>. After handling, a <strong>return-from-trap</strong> instruction restores registers, reduces privilege back to user mode, and returns to the caller.</p>
+    <div class="info-box">
+      <strong>Trap table:</strong> At boot time, the OS tells the hardware the address of every trap handler. The hardware stores this <em>trap table</em>. When a trap occurs, hardware looks up the correct handler by trap number. User code cannot change the trap table — only kernel-mode code can.
+    </div>
+    <p>Sources of traps include: completion of disk I/O, keyboard interrupts, and system calls (e.g. <code>open()</code>, <code>fork()</code>, <code>write()</code>).</p>
+
+    <h3>Solution to Challenge 2: Timer Interrupt</h3>
+    <p>A <strong>cooperative approach</strong> relies on processes voluntarily giving up the CPU via system calls. Problem: a process stuck in an infinite loop never yields.</p>
+    <p>The <strong>non-cooperative (timer interrupt) approach</strong> solves this: during boot the OS programs a hardware timer to raise an interrupt every few milliseconds. When the interrupt fires:</p>
+    <ol>
+      <li>The currently running process is suspended.</li>
+      <li>Enough state (registers, PC) is saved.</li>
+      <li>A pre-configured interrupt handler in the OS runs.</li>
+    </ol>
+    <div class="success-box">
+      <strong>Key insight:</strong> A timer interrupt gives the OS the ability to regain control of the CPU periodically — even if the running process never cooperates. This is what makes preemptive multitasking possible.
+    </div>
+
+    <h3>Context Switch</h3>
+    <p>After the timer interrupt, the OS <strong>scheduler</strong> decides whether to continue the current process or switch to another. If it switches, a <strong>context switch</strong> occurs:</p>
+    <ol>
+      <li>Save current process's registers (general-purpose, PC, kernel stack pointer) onto its <em>kernel stack</em>.</li>
+      <li>Restore the next process's registers from <em>its</em> kernel stack.</li>
+      <li>Switch the stack pointer to the new process's kernel stack.</li>
+    </ol>
+    <p>The xv6 <code>swtch()</code> function implements this in assembly, explicitly saving and restoring all eight registers (eip, esp, ebx, ecx, edx, esi, edi, ebp).</p>
+    <div class="warning-box">
+      <strong>Concurrency during interrupt handling:</strong> What if another interrupt arrives while the OS is handling one? The OS disables interrupts during interrupt processing, or uses locking schemes to protect internal data structures from concurrent modification.
+    </div>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 30</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 30;
+const questions = [
+  {
+    q: "What is the formal definition of a process in operating systems?",
+    opts: [
+      "A program stored on disk in executable format",
+      "A running program — a program that has been loaded into memory and is being executed",
+      "A thread of execution inside the kernel",
+      "An instance of a system call handler"
+    ],
+    ans: 1,
+    exp: "A process is simply defined as a running program. A program on disk is just a static set of bytes; the OS transforms it into an active process by loading it into memory and starting execution. The distinction between program and process is fundamental."
+  },
+  {
+    q: "Which of the following is NOT a component of a process's address space?",
+    opts: [
+      "Text (code) segment",
+      "Heap",
+      "Physical memory chip",
+      "Stack"
+    ],
+    ans: 2,
+    exp: "A process address space consists of the text segment (code), data segment (globals/statics), heap (dynamic allocations), stack (local variables and return addresses), and memory-mapped segment. Physical memory chips are hardware resources managed by the OS — they are not segments within any one process's address space."
+  },
+  {
+    q: "In what order does the OS create a process from a program on disk?",
+    opts: [
+      "Start main() → allocate heap → allocate stack → load code",
+      "Load code into memory → allocate stack → create heap → set up I/O → start main()",
+      "Open file descriptors → load code → start main() → allocate stack",
+      "Allocate heap → allocate stack → load code → start main()"
+    ],
+    ans: 1,
+    exp: "Process creation follows five steps: (1) load the program's code and data from disk into memory, (2) allocate the run-time stack and initialize it with argv/argc, (3) create the heap, (4) perform I/O setup (open stdin, stdout, stderr), and finally (5) transfer control to main(). The OS must have memory ready before the program can start."
+  },
+  {
+    q: "What does 'lazy loading' mean in the context of process creation?",
+    opts: [
+      "The OS waits until the user requests a program before installing it",
+      "The OS loads only the pieces of code and data that are actually needed during execution, not the entire program upfront",
+      "Programs are loaded from a remote server on demand",
+      "The OS delays allocating a heap until the first malloc() call"
+    ],
+    ans: 1,
+    exp: "Lazy (demand) loading means the OS does not copy the entire program binary into memory before starting execution. Instead it loads pages of code or data only when the running program actually accesses them. This keeps startup time low and avoids wasting memory on code paths that may never execute."
+  },
+  {
+    q: "A process is in the Blocked state. What will cause it to move to the Ready state?",
+    opts: [
+      "The OS scheduler selects it to run next",
+      "The process calls fork()",
+      "The event it was waiting for (e.g. I/O completion) occurs",
+      "A timer interrupt fires"
+    ],
+    ans: 2,
+    exp: "A process becomes Blocked when it initiates an operation that cannot complete immediately, such as a disk I/O request. It moves from Blocked back to Ready when that event completes (e.g. the disk signals that data is available). The OS scheduler then picks it up from the Ready queue to run."
+  },
+  {
+    q: "A process moves from Running to Ready. Which event most likely caused this?",
+    opts: [
+      "The process completed an I/O request",
+      "The process called wait()",
+      "The process's time slice expired or a higher-priority process arrived",
+      "The process executed a trap instruction"
+    ],
+    ans: 2,
+    exp: "A Running → Ready transition is called descheduling. It happens when the timer interrupt fires (time-slice expiration) or when a higher-priority process becomes runnable. The process is still capable of running — it just lost access to the CPU temporarily."
+  },
+  {
+    q: "What information does a Process Control Block (PCB) typically store?",
+    opts: [
+      "Only the process ID and its executable file path",
+      "PID, process state, program counter, saved registers, memory info, I/O info, and scheduling info",
+      "The full contents of the process's heap and stack",
+      "Only the CPU registers and the process state"
+    ],
+    ans: 1,
+    exp: "A PCB is a comprehensive data structure. It stores the process ID, current state (running/ready/blocked), the program counter (next instruction address), saved CPU registers, memory information (page tables, base/limit registers), I/O information (open file descriptors), scheduling priority, and parent/child relationships."
+  },
+  {
+    q: "What does fork() return to the parent process and to the child process respectively?",
+    opts: [
+      "0 to the parent; the child's PID to the child",
+      "The child's PID to the parent; 0 to the child",
+      "The parent's PID to both",
+      "A file descriptor to the parent; the child's PID to the child"
+    ],
+    ans: 1,
+    exp: "fork() has a split return: the parent receives the newly created child's PID (a positive integer), while the child receives 0. This asymmetry is intentional — code in the same function can use a simple if/else on the return value to take different execution paths for parent and child."
+  },
+  {
+    q: "After fork() is called, what is the relationship between parent and child memory spaces?",
+    opts: [
+      "The child shares the parent's memory directly — no copy is made",
+      "The child gets an almost exact copy of the parent's memory contents, but in a separate address space",
+      "The child starts with a completely empty memory space",
+      "The parent's memory is transferred to the child and the parent receives a new empty space"
+    ],
+    ans: 1,
+    exp: "fork() creates a near-identical copy of the calling process. The child has the same code, data, heap, and stack contents as the parent at the moment of the fork. However, it is allocated a separate address space — modifications in one process do not affect the other."
+  },
+  {
+    q: "Consider this code: int rc = fork(); if (rc == 0) { printf(\"child\"); } else { printf(\"parent\"); }. What is the guaranteed output order?",
+    opts: [
+      "Always 'child' then 'parent'",
+      "Always 'parent' then 'child'",
+      "Either order is possible — the CPU scheduler decides which runs first",
+      "The output depends on whether the process is 32-bit or 64-bit"
+    ],
+    ans: 2,
+    exp: "After fork(), both the parent and child are ready to run. The CPU scheduler decides which executes next. Without explicit synchronization (like wait()), the output order is non-deterministic — it varies between runs and between machines."
+  },
+  {
+    q: "What is the purpose of wait() in a parent process?",
+    opts: [
+      "To pause the parent for a fixed number of milliseconds",
+      "To create a new child process and wait for it to initialize",
+      "To block the parent until a child process exits, making execution order deterministic",
+      "To send a signal to the child process to terminate"
+    ],
+    ans: 2,
+    exp: "wait(NULL) causes the parent to block until one of its child processes exits. This enforces ordering: the child always runs and finishes before the parent resumes after the wait() call. It returns the PID of the child that exited."
+  },
+  {
+    q: "What happens to the process that calls execvp() on success?",
+    opts: [
+      "A new child process is created to run the new program; the caller continues",
+      "The caller's memory is replaced with the new program's image; execvp() does not return",
+      "The caller is suspended until the new program finishes",
+      "execvp() returns 0 and the caller can proceed normally"
+    ],
+    ans: 1,
+    exp: "exec() (including execvp()) replaces the current process's entire memory image with the new program specified. The new binary is loaded, a new stack and heap are initialized, and the process begins executing the new program's main(). Since the original code is gone, exec() never returns to the caller on success."
+  },
+  {
+    q: "In the exec() example, why does 'printf(\"this shouldn't print out\")' never execute after execvp()?",
+    opts: [
+      "printf() is blocked by the OS after exec() completes",
+      "execvp() replaces the process's memory with the new program, so the line no longer exists in the process",
+      "The child process is killed immediately after execvp()",
+      "The C compiler optimizes away unreachable code after execvp()"
+    ],
+    ans: 1,
+    exp: "When execvp() succeeds, the OS completely replaces the calling process's address space with the new program. All the old code — including that printf() call — is gone. There is simply nothing left to execute from the original program. Control passes to the entry point of the newly loaded binary."
+  },
+  {
+    q: "Why are fork() and exec() designed as two separate system calls instead of one combined call?",
+    opts: [
+      "Because combining them would exceed the maximum system call number limit",
+      "The separation allows the child to manipulate its environment (e.g. redirect I/O, set up pipes) between fork() and exec()",
+      "exec() cannot be called from within a process created by fork()",
+      "Separate calls improve performance by allowing lazy stack allocation"
+    ],
+    ans: 1,
+    exp: "The fork/exec split is a deliberate design choice. The window between fork() and exec() lets the shell (or programmer) reconfigure the child's environment before launching the new program: closing and re-opening file descriptors for I/O redirection, setting up pipe ends, changing signal handlers, etc. A single combined call would make these manipulations impossible."
+  },
+  {
+    q: "How does a shell implement the command: wc p3.c > output.txt",
+    opts: [
+      "It passes the '>' flag directly to the wc program",
+      "It forks a child; the child closes STDOUT, opens output.txt (which gets fd 1), then execs wc",
+      "It runs wc normally and the OS automatically redirects output to output.txt",
+      "It creates a pipe between wc and a file-writing process"
+    ],
+    ans: 1,
+    exp: "I/O redirection works by exploiting file descriptor inheritance. After fork(), the child: (1) closes STDOUT_FILENO (fd 1), (2) opens output.txt with O_CREAT|O_WRONLY|O_TRUNC — this open() returns fd 1 because it is the lowest available descriptor, (3) calls execvp('wc', ...). The wc program writes to fd 1 (stdout) not knowing it was redirected to a file."
+  },
+  {
+    q: "Which advantage do pipes have over I/O redirection with temporary files?",
+    opts: [
+      "Pipes can transfer more data per second because they use the CPU cache",
+      "Pipes automatically clean up, require no disk space, and allow reader and writer to proceed in parallel",
+      "Pipes allow the same program to be run multiple times simultaneously",
+      "Pipes bypass the file system entirely, making them faster than any disk operation"
+    ],
+    ans: 1,
+    exp: "Pipes have three key advantages over temp-file redirection: (1) they auto-clean — no explicit deletion needed, (2) they require no disk space — data flows through an in-memory buffer, and (3) reader and writer run concurrently — the writer does not have to finish before the reader starts."
+  },
+  {
+    q: "What is the core problem that Limited Direct Execution (LDE) is designed to solve?",
+    opts: [
+      "Programs run too slowly when managed by the OS",
+      "The OS needs to run programs efficiently on the CPU while still retaining control over them",
+      "Multiple programs cannot share the same physical memory",
+      "System calls are too slow because they require disk access"
+    ],
+    ans: 1,
+    exp: "LDE addresses the fundamental tension in OS design: running programs directly on the CPU is fast (direct execution), but without restrictions the OS loses all control. LDE adds 'limits' — processor modes, trap handlers, and timer interrupts — that let programs run at full speed while guaranteeing the OS stays in control."
+  },
+  {
+    q: "What is the difference between User mode and Kernel mode?",
+    opts: [
+      "User mode runs faster because it bypasses the OS; kernel mode is slower but safer",
+      "In User mode applications have restricted hardware access; in Kernel mode the OS has full access to all resources",
+      "User mode allows direct memory access; kernel mode restricts it",
+      "User mode is for 64-bit programs; kernel mode is for 32-bit programs"
+    ],
+    ans: 1,
+    exp: "Processor privilege levels restrict what code can do. In user mode, applications cannot directly access I/O devices, modify page tables, or execute privileged instructions — they must go through system calls. In kernel mode, the OS has unrestricted access to all hardware. This separation enforces protection and isolation."
+  },
+  {
+    q: "What does the trap instruction (int n) do?",
+    opts: [
+      "It terminates the current process and starts the next one",
+      "It raises privilege to kernel mode, saves registers on the kernel stack, and jumps to the trap handler",
+      "It sends a hardware interrupt to a specific device",
+      "It pauses execution for n milliseconds"
+    ],
+    ans: 1,
+    exp: "The trap instruction is the gateway from user mode to kernel mode. It atomically: (1) raises the privilege level to kernel mode, (2) saves the current register state on the kernel stack (so the OS can restore it later), and (3) jumps to the appropriate trap handler whose address is found in the trap table."
+  },
+  {
+    q: "When is the trap table initialized, and why does this matter for security?",
+    opts: [
+      "At every system call; this allows the OS to dynamically update handlers",
+      "At boot time by the OS in kernel mode; user programs cannot change it, preventing them from redirecting traps to malicious code",
+      "By each process when it starts; this allows per-process system call handlers",
+      "By the hardware manufacturer; it is burned into ROM"
+    ],
+    ans: 1,
+    exp: "The trap table is set up once at boot time, while the machine is in kernel mode. It maps trap numbers to handler addresses. Because only kernel-mode code can install the trap table, user processes cannot redirect system calls to malicious handlers — a crucial security property of the LDE protocol."
+  },
+  {
+    q: "What is the cooperative approach to regaining CPU control, and what is its fatal weakness?",
+    opts: [
+      "The OS polls the CPU every 10ms; weakness is high CPU overhead",
+      "Processes voluntarily yield via system calls; weakness is that a buggy or malicious process that never calls the OS holds the CPU forever",
+      "Hardware signals the OS on every instruction; weakness is extreme performance cost",
+      "The OS kills any process running longer than 1 second; weakness is that long jobs cannot complete"
+    ],
+    ans: 1,
+    exp: "In a cooperative system, the OS trusts processes to periodically yield the CPU via system calls or by triggering exceptions. This works for well-behaved processes but fails catastrophically when a process enters an infinite loop or deliberately avoids system calls — the OS never gets the CPU back without a reboot."
+  },
+  {
+    q: "How does the non-cooperative approach (timer interrupt) solve the infinite loop problem?",
+    opts: [
+      "The OS monitors instruction counts and kills any process that executes too many instructions",
+      "A hardware timer raises an interrupt every few milliseconds, forcibly suspending the running process so the OS can run its handler",
+      "The OS runs a watchdog thread that periodically checks whether processes are stuck",
+      "The compiler inserts yield() calls at every loop back-edge"
+    ],
+    ans: 1,
+    exp: "The timer interrupt is a hardware mechanism: a timer chip is programmed at boot to raise an interrupt periodically (e.g. every 10ms). When the interrupt fires, the hardware automatically stops the running process, saves its state, and transfers control to the OS interrupt handler. This guarantees the OS regains the CPU regardless of what the process does."
+  },
+  {
+    q: "What exactly happens during a context switch?",
+    opts: [
+      "The OS copies the entire address space of the current process to disk, then loads the next process",
+      "The OS saves the current process's registers to its kernel stack, restores the next process's registers from its kernel stack, and switches to the new kernel stack",
+      "The OS pauses all processes and runs a scheduling algorithm before resuming any of them",
+      "The hardware automatically saves all registers and the OS only needs to update the program counter"
+    ],
+    ans: 1,
+    exp: "A context switch is a low-level mechanism. The OS (via a small assembly routine like xv6's swtch()): (1) saves general-purpose registers, PC, and the kernel stack pointer of the current process onto its kernel stack, (2) restores those values from the next process's kernel stack, and (3) switches the stack pointer to the new process's kernel stack. On return-from-trap, the new process resumes where it left off."
+  },
+  {
+    q: "The xv6 context struct saves 8 registers. Which register tells the CPU where to resume execution?",
+    opts: [
+      "esp — the stack pointer",
+      "ebp — the base pointer",
+      "eip — the instruction pointer (program counter)",
+      "ebx — the base register"
+    ],
+    ans: 2,
+    exp: "eip (Extended Instruction Pointer) is the program counter on x86. It holds the address of the next instruction to execute. When a context switch restores eip, the CPU resumes the process at exactly the instruction it was interrupted at. The other registers (esp, ebx, ecx, etc.) restore the CPU's arithmetic and addressing state."
+  },
+  {
+    q: "What problem can arise if a second interrupt occurs while the OS is already handling an interrupt?",
+    opts: [
+      "The second interrupt is automatically merged with the first one",
+      "The OS could corrupt its internal data structures due to concurrent modification; it handles this by disabling interrupts or using locks",
+      "The second interrupt is lost permanently",
+      "The hardware resets the system to prevent cascading failures"
+    ],
+    ans: 1,
+    exp: "Interrupt handlers access OS internal data structures (process lists, kernel stacks). If a second interrupt fires in the middle of this, the handler could run again concurrently and corrupt those structures. The OS prevents this by disabling interrupts at the start of an interrupt handler, or using sophisticated locking schemes for fine-grained protection."
+  },
+  {
+    q: "Which of the following accurately describes the return-from-trap instruction?",
+    opts: [
+      "It saves the current process state and switches to the next ready process",
+      "It restores registers from the kernel stack, reduces privilege back to user mode, and jumps to the instruction after the trap",
+      "It terminates the system call and starts a new one immediately",
+      "It flushes the CPU pipeline and reloads the trap table"
+    ],
+    ans: 1,
+    exp: "return-from-trap is the kernel's way of handing control back to user code. It reverses the trap: (1) restores the registers saved on the kernel stack at the time of the trap, (2) lowers the CPU privilege level back to user mode, and (3) jumps to the instruction immediately after the trap instruction in user code — making it appear the system call 'returned'."
+  },
+  {
+    q: "Which xv6 process state indicates a process that has exited but whose parent has not yet called wait()?",
+    opts: [
+      "SLEEPING",
+      "EMBRYO",
+      "UNUSED",
+      "ZOMBIE"
+    ],
+    ans: 3,
+    exp: "A ZOMBIE process has finished execution (returned from main or called exit()) but still has an entry in the process table because the OS is waiting for the parent to collect its exit status via wait(). Once the parent calls wait(), the zombie is fully removed. EMBRYO is a process being initialized, SLEEPING is blocked, and UNUSED is a free process table slot."
+  },
+  {
+    q: "What are the three default file descriptors every process receives at creation, and what are their indices?",
+    opts: [
+      "disk (0), network (1), display (2)",
+      "stdin (0), stdout (1), stderr (2)",
+      "read (0), write (1), execute (2)",
+      "kernel (0), user (1), shared (2)"
+    ],
+    ans: 1,
+    exp: "By convention, every process starts with three open file descriptors: 0 = stdin (standard input), 1 = stdout (standard output), 2 = stderr (standard error). I/O redirection works by closing and replacing these standard descriptors before calling exec(), so the new program transparently reads/writes the redirected sources."
+  },
+  {
+    q: "What is the heap segment of a process address space used for?",
+    opts: [
+      "Storing function call frames and local variables",
+      "Holding the compiled machine instructions of the program",
+      "Dynamically allocated memory requested by the program at runtime via malloc()",
+      "Storing global and static variables initialized at compile time"
+    ],
+    ans: 2,
+    exp: "The heap is the region of a process's address space dedicated to dynamic memory allocation. When a program calls malloc() (in C) or new (in C++), memory is allocated from the heap. It grows upward (toward higher addresses). The program must explicitly free heap memory with free() to avoid memory leaks."
+  },
+  {
+    q: "When a process initiates a disk I/O request, what state transition occurs and why?",
+    opts: [
+      "Running → Ready, because the OS wants to run a higher-priority process",
+      "Running → Blocked, because the process cannot continue until the I/O completes and must wait",
+      "Ready → Running, because the I/O operation gives the process more work to do",
+      "Blocked → Running, because the disk sends data directly to the CPU"
+    ],
+    ans: 1,
+    exp: "Disk I/O is orders of magnitude slower than CPU operations. When a process issues a read/write, it cannot proceed until the data is available. The OS transitions it to Blocked and schedules another ready process on the CPU. When the disk signals completion (via interrupt), the OS moves the process back to Ready."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
