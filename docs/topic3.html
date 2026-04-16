@@ -68,7 +68,7 @@
   <p class="subtitle">Topic 3: Scheduling, MLFQ, Address Spaces &amp; Address Translation</p>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
-    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (45 Q)</button>
   </div>
 
   <!-- LESSON SECTION -->
@@ -265,7 +265,7 @@ int main() {
 </div>
 
 <script>
-const NQ = 30;
+const NQ = 45;
 const questions = [
   {
     q: "How is turnaround time defined for a scheduled job?",
@@ -607,6 +607,171 @@ const questions = [
     ],
     ans: 2,
     exp: "physical address = virtual address + base = 15KB + 32KB = 47KB. This is the fundamental base-and-bounds calculation. The virtual address 15KB is what the program sees and uses; 47KB is where the data actually lives in physical RAM. The hardware performs this addition transparently on every memory access."
+  },
+  {
+    q: "How is the \"Turnaround Time\" performance metric calculated?",
+    opts: [
+      "T_arrival − T_completion",
+      "T_firstrun − T_arrival",
+      "T_completion − T_arrival",
+      "T_completion + T_arrival"
+    ],
+    ans: 2,
+    exp: "The source defines turnaround time as the time at which the job completes minus the time at which the job arrived in the system."
+  },
+  {
+    q: "Which effect describes short jobs being stuck behind a long-running \"heavyweight\" job in a FIFO queue?",
+    opts: [
+      "Priority Inversion",
+      "Convoy Effect",
+      "Starvation",
+      "Thrashing"
+    ],
+    ans: 1,
+    exp: "The convoy effect occurs when a number of relatively short consumers of a resource get queued behind a heavyweight resource consumer."
+  },
+  {
+    q: "What is the primary difference between Shortest Job First (SJF) and Shortest Time-to-Completion First (STCF)?",
+    opts: [
+      "SJF is fair, STCF is not.",
+      "SJF is for I/O jobs, STCF is for CPU jobs.",
+      "STCF adds preemption to SJF.",
+      "SJF has a shorter response time."
+    ],
+    ans: 2,
+    exp: "STCF is described as adding preemption to SJF; it schedules the job that has the least time left whenever a new job enters the system."
+  },
+  {
+    q: "Which metric measures the time from when a job arrives to the first time it is scheduled?",
+    opts: [
+      "Turnaround Time",
+      "Completion Time",
+      "Response Time",
+      "Waiting Time"
+    ],
+    ans: 2,
+    exp: "Response time is the time from when the job arrives to the first time it is scheduled."
+  },
+  {
+    q: "In Round Robin (RR) scheduling, what is the consequence of choosing a very short time slice?",
+    opts: [
+      "Worse response time.",
+      "Increased fairness.",
+      "Context switching costs will dominate performance.",
+      "Turnaround time is always minimized."
+    ],
+    ans: 2,
+    exp: "While a shorter time slice improves response time, the cost of context switching will dominate overall performance if it is too short."
+  },
+  {
+    q: "What is the main objective of a Multi-Level Feedback Queue (MLFQ)?",
+    opts: [
+      "Optimize turnaround time and minimize response time without prior knowledge of job lengths.",
+      "Ensure that all processes run for the exact same amount of time.",
+      "Prevent users from using system calls.",
+      "Maximize the length of time slices for all processes."
+    ],
+    ans: 0,
+    exp: "MLFQ aims to optimize turnaround time by running shorter jobs first and minimize response time by learning from the past behavior of jobs."
+  },
+  {
+    q: "According to MLFQ rules, where is a job placed when it first enters the system?",
+    opts: [
+      "In the lowest priority queue.",
+      "In the middle priority queue.",
+      "At the highest priority queue.",
+      "In a blocked state."
+    ],
+    ans: 2,
+    exp: "Rule 3 of MLFQ states that when a job enters the system, it is placed at the highest priority."
+  },
+  {
+    q: "How does MLFQ address the problem of \"Starvation\"?",
+    opts: [
+      "By deleting long-running jobs.",
+      "By giving all jobs the same time slice.",
+      "By moving all jobs to the topmost queue after a period \"S\" (Priority Boost).",
+      "By disabling interrupts."
+    ],
+    ans: 2,
+    exp: "Rule 5 (Priority Boost) states that after some time period S, all jobs are moved to the topmost queue to ensure every job eventually gets CPU time."
+  },
+  {
+    q: "Which component of the \"Address Space\" is used for storing local variables and function parameters?",
+    opts: [
+      "Heap",
+      "Code Segment",
+      "Stack",
+      "Data Segment"
+    ],
+    ans: 2,
+    exp: "The stack is used to store return addresses, values, local variables, and arguments to routines."
+  },
+  {
+    q: "What is the benefit of \"Memory Virtualization\"?",
+    opts: [
+      "It makes the physical RAM larger.",
+      "It allows the OS to run without a CPU.",
+      "It provides an illusion that each process has its own private, large memory space.",
+      "It prevents processes from using the heap."
+    ],
+    ans: 2,
+    exp: "Memory virtualization provides each process with the illusion that it uses the whole memory, ensuring isolation and ease of use."
+  },
+  {
+    q: "In the \"Base and Bounds\" relocation technique, how is the physical address calculated?",
+    opts: [
+      "Physical Address = Virtual Address - Base",
+      "Physical Address = Virtual Address + Base",
+      "Physical Address = Base / Virtual Address",
+      "Physical Address = Virtual Address + Bounds"
+    ],
+    ans: 1,
+    exp: "Hardware performs dynamic relocation by adding the virtual address to the base register to get the physical address."
+  },
+  {
+    q: "What happens if a process attempts to access a virtual address that is greater than or equal to the \"Bounds\" register?",
+    opts: [
+      "The hardware raises an exception (out-of-bounds).",
+      "The OS allocates more memory automatically.",
+      "The computer reboots.",
+      "The virtual address is automatically reset to zero."
+    ],
+    ans: 0,
+    exp: "Every virtual address must be within bounds; if not, the hardware raises an exception for an out-of-bounds access."
+  },
+  {
+    q: "Why must instructions to update \"Base\" and \"Bounds\" registers be privileged?",
+    opts: [
+      "To speed up execution.",
+      "To prevent user processes from accessing other processes' memory.",
+      "Because user programs do not have enough registers.",
+      "To allow the user to change the CPU's clock speed."
+    ],
+    ans: 1,
+    exp: "Only the OS should be able to set these values in privileged mode to ensure protection between applications."
+  },
+  {
+    q: "What is a \"Free List\" in the context of memory management?",
+    opts: [
+      "A list of physical memory ranges that are currently not in use.",
+      "A list of all processes that are ready to run.",
+      "A collection of open source software.",
+      "A list of virtual addresses used by the stack."
+    ],
+    ans: 0,
+    exp: "The OS uses a free list to track ranges of physical memory that are not in use to find room for new address spaces."
+  },
+  {
+    q: "When a context switch occurs, where does the OS store the \"Base and Bounds\" pair of the process that is being stopped?",
+    opts: [
+      "On the hard drive.",
+      "In the program code.",
+      "In the Process Control Block (PCB).",
+      "In the Instruction Pointer (IP)."
+    ],
+    ans: 2,
+    exp: "During a context switch, the OS saves and restores the base-and-bounds pair within the process structure or PCB."
   }
 ];
 let answered = Array(NQ).fill(false);
