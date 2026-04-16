@@ -68,7 +68,7 @@
   <p class="subtitle">Topic 1: Introduction — What is an OS and what does it do?</p>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
-    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (15 Q)</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
   </div>
 
   <!-- LESSON SECTION -->
@@ -271,14 +271,14 @@ close(fd);</pre>
     <div class="score-row">
       <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
       <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
-      <span class="score-val" id="scoreval">0 / 15</span>
+      <span class="score-val" id="scoreval">0 / 30</span>
     </div>
     <div id="questions"></div>
   </div>
 </div>
 
 <script>
-const NQ = 15;
+const NQ = 30;
 const questions = [
   {
     q: "Which of the following correctly describes the Van Neumann model of computing?",
@@ -444,6 +444,171 @@ const questions = [
     ],
     ans: 1,
     exp: "Virtualization is the core OS technique of taking physical resources — processor, memory, disk — and presenting a virtual form that is more general and easier to use. For example, a single CPU appears as many virtual CPUs, and each process sees its own large private memory even if physical RAM is small. The OS is sometimes called a 'virtual machine' for this reason."
+  },
+  {
+    q: "According to the Von Neumann model, what is the correct sequence of the processor's cycle?",
+    opts: [
+      "Decode -> Execute -> Fetch",
+      "Fetch -> Decode -> Execute",
+      "Execute -> Fetch -> Decode",
+      "Store -> Fetch -> Execute"
+    ],
+    ans: 1,
+    exp: "The processor first fetches an instruction from memory, decodes it to understand the operation, and then executes it."
+  },
+  {
+    q: "What is the primary purpose of \"Virtualizing the CPU\"?",
+    opts: [
+      "To make the computer run faster.",
+      "To create the illusion that many programs are running simultaneously on a single processor.",
+      "To increase the physical number of CPUs in the machine.",
+      "To prevent the system from crashing."
+    ],
+    ans: 1,
+    exp: "By virtualizing the CPU, the OS and hardware turn a single physical CPU into a seemingly infinite number of virtual CPUs, allowing multiple programs to run at once."
+  },
+  {
+    q: "Which of the following best describes a \"System Call\"?",
+    opts: [
+      "An interface (API) that allows user programs to request actions from the OS.",
+      "A hardware component that stores data.",
+      "A unique number assigned to a process.",
+      "A method to increase RAM speed."
+    ],
+    ans: 0,
+    exp: "System calls serve as the API or standard library that users use to tell the OS to perform tasks like running programs or accessing devices."
+  },
+  {
+    q: "When the OS virtualizes memory, each process is provided with its own:",
+    opts: [
+      "Physical RAM chip.",
+      "CPU register.",
+      "Private virtual address space.",
+      "Hard drive partition."
+    ],
+    ans: 2,
+    exp: "The OS maps a private virtual address space for each program onto shared physical memory, ensuring one program's memory access doesn't affect others."
+  },
+  {
+    q: "Why is \"Persistence\" a major theme in Operating Systems?",
+    opts: [
+      "Because CPUs are too slow.",
+      "Because main memory (DRAM) is volatile and loses data when power is lost.",
+      "Because virtualization requires a lot of disk space.",
+      "Because system calls are not reliable."
+    ],
+    ans: 1,
+    exp: "Persistence is required because data in DRAM is lost if the system crashes or power goes away; hardware like SSDs and software like file systems are needed to keep data safe long-term."
+  },
+  {
+    q: "What does the \"Isolation\" design goal ensure?",
+    opts: [
+      "That the computer is not connected to the internet.",
+      "That only one program can run at a time.",
+      "That the bad behavior of one application does not harm other applications or the OS.",
+      "That the OS uses the maximum amount of energy."
+    ],
+    ans: 2,
+    exp: "Isolation is a protection goal where the OS ensures that a failing or malicious program cannot interfere with the rest of the system."
+  },
+  {
+    q: "In a multi-threaded program, why can incrementing a shared counter lead to \"Concurrency\" problems?",
+    opts: [
+      "Because threads do not share the same memory.",
+      "Because the steps (Load, Increment, Store) do not execute atomically.",
+      "Because the counter is stored in a volatile SSD.",
+      "Because there are too many system calls."
+    ],
+    ans: 1,
+    exp: "Since the three instructions for incrementing (load, increment, store) are not atomic, the OS might switch threads in between, leading to unpredictable and incorrect results."
+  },
+  {
+    q: "What is a \"PID\" (Process Identifier)?",
+    opts: [
+      "A type of high-speed memory.",
+      "A unique number assigned by the OS to track a running process.",
+      "A system call used to delete files.",
+      "A hardware device for networking."
+    ],
+    ans: 1,
+    exp: "A PID is a unique number that helps the OS manage and track each instance of an executing program efficiently."
+  },
+  {
+    q: "Which of these is a mechanism used by file systems to handle system crashes during a write?",
+    opts: [
+      "Virtualizing the CPU.",
+      "Using more RAM.",
+      "Journaling or copy-on-write.",
+      "Assigning a new PID."
+    ],
+    ans: 2,
+    exp: "File systems handle crashes by using techniques like journaling, copy-on-write, or carefully ordering disk writes to maintain data consistency."
+  },
+  {
+    q: "What does the OS do as a \"Resource Manager\"?",
+    opts: [
+      "It only manages the power supply.",
+      "It manages physical resources like the CPU, memory, and disk for sharing.",
+      "It creates new hardware for the user.",
+      "It only focuses on user interface design."
+    ],
+    ans: 1,
+    exp: "The OS is responsible for managing and sharing physical resources (CPU, memory, disks) among many concurrently running programs."
+  },
+  {
+    q: "Which design goal focuses on minimizing the \"overhead\" of the OS?",
+    opts: [
+      "Reliability",
+      "Protection",
+      "High Performance",
+      "Abstraction"
+    ],
+    ans: 2,
+    exp: "A key design goal is to provide services and virtualization with minimal overhead to ensure the system performs efficiently."
+  },
+  {
+    q: "In the context of OS design, what does \"Policy\" refer to?",
+    opts: [
+      "The physical location of the CPU.",
+      "Deciding which program should run when multiple programs want to run.",
+      "The code used to write a file to a disk.",
+      "The security password of the admin."
+    ],
+    ans: 1,
+    exp: "While APIs provide the \"how,\" policies are the rules the OS uses to make decisions, such as which process to schedule next."
+  },
+  {
+    q: "What is the definition of a \"Thread\"?",
+    opts: [
+      "A physical wire inside the CPU.",
+      "A function running within the same memory space as other activated functions.",
+      "A backup copy of a file on a disk.",
+      "A type of system call for network access."
+    ],
+    ans: 1,
+    exp: "Threads allow multiple activities to be active at once within the same memory space, which facilitates data sharing but introduces concurrency risks."
+  },
+  {
+    q: "Which hardware device is specifically mentioned as providing \"Persistence\"?",
+    opts: [
+      "DRAM",
+      "SSD (Solid-State Drive)",
+      "Register",
+      "CPU"
+    ],
+    ans: 1,
+    exp: "Unlike volatile DRAM, hardware like SSDs and Hard Disk Drives (HDDs) are used to store data persistently."
+  },
+  {
+    q: "What is the primary role of the \"File System\"?",
+    opts: [
+      "To manage the CPU's temperature.",
+      "To manage the disk and store files created by users.",
+      "To assign PIDs to new processes.",
+      "To translate virtual addresses to physical addresses."
+    ],
+    ans: 1,
+    exp: "The file system is the software component responsible for managing storage devices and organizing the files users create."
   }
 ];
 let answered = Array(NQ).fill(false);
