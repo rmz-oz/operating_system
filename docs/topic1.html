@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 1: Introduction</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 1: Introduction — What is an OS and what does it do?</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (15 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>What Happens When a Program Runs?</h2>
+    <p>At its most basic level, a running program simply executes instructions. This follows the <strong>Von Neumann model of computing</strong> — a cycle that every modern processor repeats billions of times per second:</p>
+    <div class="flow">
+      <div class="flow-step"><div class="step-num">1</div><p><strong>Fetch</strong><br>Processor retrieves an instruction from memory</p></div>
+      <div class="flow-step"><div class="step-num">2</div><p><strong>Decode</strong><br>Figure out which instruction this is</p></div>
+      <div class="flow-step"><div class="step-num">3</div><p><strong>Execute</strong><br>Do what the instruction says (add, branch, load, store…)</p></div>
+      <div class="flow-step"><div class="step-num">4</div><p><strong>Advance</strong><br>Move to the next instruction and repeat</p></div>
+    </div>
+    <p>The processor repeats this fetch-decode-execute loop until the program completes. But who manages all the programs running on the system, allocates memory to them, and lets them share the hardware? That is the job of the <strong>Operating System</strong>.</p>
+
+    <hr>
+
+    <h2>What is an Operating System?</h2>
+    <p>The Operating System (OS) is a layer of software that sits between application programs and the hardware. Its three core responsibilities are:</p>
+    <ul>
+      <li>Making it easy to <strong>run programs</strong></li>
+      <li>Allowing programs to <strong>share memory</strong></li>
+      <li>Enabling programs to <strong>interact with devices</strong></li>
+    </ul>
+    <div class="info-box">
+      <strong>Key definition:</strong> The OS is in charge of making sure the system operates <em>correctly</em>, <em>efficiently</em>, and is <em>easy to use</em>.
+    </div>
+    <p>The OS can be thought of in three complementary ways:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Virtual Machine</div>
+        <p style="font-size:13px;line-height:1.6">Takes physical resources and presents a more powerful, general, easy-to-use virtual form of them.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Standard Library</div>
+        <p style="font-size:13px;line-height:1.6">Exports a few hundred system calls (APIs) that programs use to run code, access memory, and use devices.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Resource Manager</div>
+        <p style="font-size:13px;line-height:1.6">Manages CPU, memory, and disk — sharing them efficiently among many concurrently running programs.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Three Major Themes of the Course</h2>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Virtualization</div>
+        <p style="font-size:13px;line-height:1.6">"You own the whole machine." The OS creates an illusion that each program has exclusive access to CPU, memory, and disk — even when many programs share them.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Concurrency</div>
+        <p style="font-size:13px;line-height:1.6">"Many things are happening at once." Managing multiple threads and processes that execute simultaneously introduces subtle correctness problems.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Persistence</div>
+        <p style="font-size:13px;line-height:1.6">"Your data survives crashes." The file system and storage hardware ensure data is not lost when power fails or the system crashes.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Virtualizing the CPU</h2>
+    <p>Even on a machine with a single physical processor, the OS creates the illusion of many virtual CPUs. Consider this simple C program <code>cpu.c</code>:</p>
+    <pre>int main(int argc, char *argv[]) {
+    char *str = argv[1];
+    while (1) {
+        Spin(1);          // busy-wait for 1 second
+        printf("%s\n", str);
+    }
+    return 0;
+}</pre>
+    <p>When four instances are launched simultaneously, the output interleaves A, B, C, D — even though only one physical CPU exists. The OS achieves this by rapidly time-sharing the CPU among processes.</p>
+    <div class="info-box">
+      <strong>CPU Virtualization:</strong> Turning a single CPU into a seemingly infinite number of CPUs, allowing many programs to appear to run at the same time. The OS (with hardware help) is responsible for this illusion.
+    </div>
+    <p>Two important questions arise from CPU virtualization:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">How do programs communicate with the OS?</div>
+        <p style="font-size:13px;line-height:1.6">Answer: <strong>API (System Calls)</strong> — programs use the OS-provided interface to run programs, stop them, or tell the OS which program to run.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Which program runs when multiple want to run?</div>
+        <p style="font-size:13px;line-height:1.6">Answer: <strong>Policy</strong> — the OS uses scheduling policies to decide which process gets the CPU at any given moment.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Virtualizing Memory</h2>
+    <p>Physical memory is simply an array of bytes. Every program reads memory (load) by specifying an address, and writes memory (store) by specifying an address and data. The OS creates a <strong>virtual address space</strong> for each process.</p>
+    <pre>int *p = malloc(sizeof(int));  // allocate memory
+*p = 0;                         // initialize
+while (1) {
+    Spin(1);
+    *p = *p + 1;
+    printf("(%d) p: %d\n", getpid(), *p);
+}</pre>
+    <p>When two copies of this program run simultaneously, both print address <code>00200000</code>, yet they count independently. This reveals a key property:</p>
+    <div class="success-box">
+      <strong>Virtual Address Space:</strong> Each process has its own private virtual address space. The OS maps each virtual address onto physical memory. A memory reference in one process does not affect another process's memory — even if the virtual addresses are the same. Physical memory is a shared resource managed entirely by the OS.
+    </div>
+    <p>A <strong>Process Identifier (PID)</strong> is a unique number assigned by the OS to each running process so it can manage and track processes efficiently. A process is an instance of a program in execution.</p>
+
+    <hr>
+
+    <h2>The Problem of Concurrency</h2>
+    <p>Both the OS (juggling many processes) and modern multi-threaded programs exhibit concurrency. Consider <code>thread.c</code> — two threads both increment a shared counter:</p>
+    <pre>volatile int counter = 0;
+
+void *worker(void *arg) {
+    for (int i = 0; i &lt; loops; i++) {
+        counter++;      // this is NOT atomic!
+    }
+    return NULL;
+}
+// main creates two worker threads, then joins them
+</pre>
+    <p>With <code>loops = 1000</code> the answer is reliably 2000. With <code>loops = 100000</code> the result is wrong and non-deterministic (e.g., 143012 one run, 137298 the next).</p>
+    <h3>Why does this happen?</h3>
+    <p>The statement <code>counter++</code> compiles to <strong>three separate machine instructions</strong>:</p>
+    <ol>
+      <li>Load the value of <code>counter</code> from memory into a register</li>
+      <li>Increment the register value</li>
+      <li>Store the register value back into memory</li>
+    </ol>
+    <div class="warning-box">
+      <strong>Non-atomic operations cause race conditions.</strong> If a thread is interrupted between the load and the store — and another thread executes — both threads may read the same old value, increment it, and write back the same result, losing one increment. This is the fundamental problem of concurrency.
+    </div>
+
+    <hr>
+
+    <h2>Persistence</h2>
+    <p>Volatile memory (DRAM) loses all data when power is removed or the system crashes. Persistent storage requires both hardware and software working together:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Hardware</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Hard Disk Drives (HDDs)</li>
+          <li>Solid-State Drives (SSDs)</li>
+          <li>Any non-volatile I/O device</li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Software (File System)</div>
+        <ul style="font-size:13px;line-height:1.8;padding-left:1.2rem">
+          <li>Manages the disk on behalf of the user</li>
+          <li>Stores files created by user programs</li>
+          <li>Handles crash recovery (journaling, copy-on-write)</li>
+        </ul>
+      </div>
+    </div>
+    <p>Writing a file involves system calls routed to the file system:</p>
+    <pre>int fd = open("/tmp/file", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+int rc = write(fd, "hello world\n", 13);
+close(fd);</pre>
+    <p>The OS file system must figure out <em>where</em> on disk the data will reside, issue the necessary I/O requests to the storage device, and carefully order writes to survive crashes — using techniques such as <strong>journaling</strong> or <strong>copy-on-write</strong>.</p>
+
+    <hr>
+
+    <h2>OS Design Goals</h2>
+    <p>Building a good OS requires balancing several competing design goals:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Abstraction</div>
+        <p style="font-size:13px;line-height:1.6">Hide hardware complexity. Make the system convenient and easy to use by providing clean, high-level interfaces.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">High Performance</div>
+        <p style="font-size:13px;line-height:1.6">Minimize OS overhead. Virtualization must not impose excessive cost on programs. Every extra instruction the OS executes is overhead.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Protection &amp; Isolation</div>
+        <p style="font-size:13px;line-height:1.6">Bad behavior of one application must not harm other applications or the OS itself. Each process is isolated from others.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Reliability</div>
+        <p style="font-size:13px;line-height:1.6">The OS must run non-stop. Additional considerations include energy-efficiency, security, and mobility for modern platforms.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>What Resources Does the OS Manage?</h2>
+    <p>The OS deals with three fundamental hardware resources in every system:</p>
+    <ul>
+      <li><strong>CPU</strong> — executes code with data (virtualized as processes/threads)</li>
+      <li><strong>Memory</strong> — stores code and data (virtualized as address spaces)</li>
+      <li><strong>Storage</strong> — persistently stores code and data (managed by the file system)</li>
+    </ul>
+    <p>From mainframe computers (M360) running early virtual machines, to Unix on PDP-11 minicomputers introducing shell, pipes, and signals, to personal computers running DOS/Windows/Mac, to today's smartphones, IoT devices, self-driving cars, and AI systems — an operating system lies behind all of them.</p>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 15</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 15;
+const questions = [
+  {
+    q: "Which of the following correctly describes the Van Neumann model of computing?",
+    opts: [
+      "Programs are stored on disk and streamed to the CPU one byte at a time",
+      "The processor repeatedly fetches, decodes, and executes instructions from memory",
+      "The OS translates source code into machine instructions at runtime",
+      "The CPU and memory communicate only through the operating system"
+    ],
+    ans: 1,
+    exp: "The Von Neumann model describes the fundamental fetch-decode-execute cycle: the processor fetches an instruction from memory, decodes it to determine what it is, executes it, then moves to the next instruction. This cycle repeats until the program completes."
+  },
+  {
+    q: "Which three words best summarize what an OS is responsible for?",
+    opts: [
+      "Compiling, linking, loading",
+      "Virtualization, concurrency, persistence",
+      "Scheduling, networking, encryption",
+      "Booting, logging, monitoring"
+    ],
+    ans: 1,
+    exp: "The three major themes of the course — and the three core responsibilities of an OS — are Virtualization ('you own the whole machine'), Concurrency ('many things happen at once'), and Persistence ('your data survives crashes')."
+  },
+  {
+    q: "An OS is sometimes called a 'standard library'. What does this mean?",
+    opts: [
+      "The OS contains common data structures like linked lists and hash tables",
+      "The OS provides APIs and system calls that programs use to interact with hardware",
+      "The OS is written in a standard programming language such as C",
+      "All operating systems have the same codebase"
+    ],
+    ans: 1,
+    exp: "The OS exports a few hundred system calls that act as a standard library for programs. These calls let programs run other programs, access memory, and interact with devices — without needing to know hardware details."
+  },
+  {
+    q: "When cpu.c is run four times simultaneously on a single-processor machine, all four seem to run at the same time. What OS mechanism creates this illusion?",
+    opts: [
+      "Each process is assigned its own dedicated CPU core",
+      "The OS time-shares the single CPU among processes, switching rapidly between them",
+      "The program is compiled four times into different CPU registers",
+      "Virtual memory allows multiple instruction streams to execute in parallel"
+    ],
+    ans: 1,
+    exp: "CPU virtualization works by time-sharing: the OS rapidly switches the single physical CPU between processes, giving each a slice of time. This creates the illusion that all programs run simultaneously even though only one executes at any instant."
+  },
+  {
+    q: "Two processes running mem.c simultaneously both report their allocated memory at address 00200000 and count independently. What explains this?",
+    opts: [
+      "The OS placed both processes at the same physical memory location",
+      "Each process operates in its own private virtual address space; the OS maps each to different physical memory",
+      "malloc() always returns address 00200000 by convention",
+      "The two processes share a single counter variable stored at 00200000"
+    ],
+    ans: 1,
+    exp: "Virtual memory gives each process its own private virtual address space. The same virtual address (00200000) in two different processes maps to different physical locations. Changes in one process do not affect the other, which is why they count independently."
+  },
+  {
+    q: "What is a Process Identifier (PID)?",
+    opts: [
+      "A register inside the CPU that holds the current instruction address",
+      "A unique number the OS assigns to each running process to manage and track it",
+      "The memory address where a process stores its stack",
+      "A flag indicating whether a process is in kernel mode or user mode"
+    ],
+    ans: 1,
+    exp: "A PID is a unique number assigned by the OS to each running process. It helps the OS manage and track processes efficiently. A process itself is an instance of a program in execution."
+  },
+  {
+    q: "In thread.c, when loops = 1000 the final counter is 2000 (correct), but when loops = 100000 the result is wrong and non-deterministic. Why?",
+    opts: [
+      "The C compiler generates incorrect code for large loop counts",
+      "The counter++ operation is not atomic — it compiles to three separate instructions that can be interleaved by the OS",
+      "The OS kills one thread once the counter exceeds a threshold",
+      "Integer overflow corrupts the counter at large values"
+    ],
+    ans: 1,
+    exp: "counter++ compiles to: (1) load the value from memory, (2) increment, (3) store back. If the OS interrupts a thread between steps 1 and 3 and another thread executes all three steps, both threads end up writing the same incremented value — losing an update. With small loop counts, the probability of this race condition occurring is low."
+  },
+  {
+    q: "Which statement about physical memory and virtual address spaces is correct?",
+    opts: [
+      "Each process directly accesses physical memory using hardware addresses",
+      "Physical memory is a private resource owned exclusively by the first process to start",
+      "Each process has its own private virtual address space; physical memory is a shared resource managed by the OS",
+      "Virtual address spaces are stored on disk and swapped into physical memory only when needed"
+    ],
+    ans: 2,
+    exp: "Each process sees its own private virtual address space, giving it the illusion of exclusive access. However, the underlying physical memory is shared among all processes and is managed by the OS, which maps virtual addresses to physical addresses."
+  },
+  {
+    q: "What are the three steps that make up a counter++ operation at the machine instruction level?",
+    opts: [
+      "Allocate, increment, deallocate",
+      "Lock, modify, unlock",
+      "Fetch instruction, decode, execute",
+      "Load value from memory, increment in register, store back to memory"
+    ],
+    ans: 3,
+    exp: "At the machine level, counter++ is not a single atomic operation. It requires: (1) a load instruction to bring the current value from memory into a CPU register, (2) an add instruction to increment the register, and (3) a store instruction to write the result back to memory. This is why concurrent access causes race conditions."
+  },
+  {
+    q: "Which storage technique does the file system use to handle system crashes during a write?",
+    opts: [
+      "Replication — writing every file to three separate disks simultaneously",
+      "Journaling or copy-on-write, combined with carefully ordering writes to disk",
+      "Checkpointing — saving the entire memory state every second",
+      "Transactional SQL — wrapping every write in a database transaction"
+    ],
+    ans: 1,
+    exp: "The file system handles crash consistency using journaling (writing a log of intended changes before applying them) or copy-on-write (writing new data to a new location before updating the pointer). Both techniques ensure the disk is in a consistent state after a crash."
+  },
+  {
+    q: "Which system calls does a program use to write data to a file, as shown in the persistence example?",
+    opts: [
+      "create(), append(), flush()",
+      "fopen(), fprintf(), fclose()",
+      "open(), write(), close()",
+      "mount(), seek(), sync()"
+    ],
+    ans: 2,
+    exp: "The example code uses open() to open/create the file, write() to write the string 'hello world' to it, and close() to release the file descriptor. These system calls are routed to the file system component of the OS."
+  },
+  {
+    q: "What is 'isolation' in the context of OS design goals?",
+    opts: [
+      "The OS prevents any two processes from communicating with each other",
+      "Bad behavior of one process does not harm other processes or the OS itself",
+      "Each CPU core runs only a single process at a time",
+      "The kernel is written in an isolated, memory-safe language"
+    ],
+    ans: 1,
+    exp: "Isolation is the property that one process's bad behavior (crash, malicious code, runaway loop) does not affect other processes or the OS itself. It is a core design goal under the 'protection' category and is enforced through virtual address spaces, privilege levels, and other hardware mechanisms."
+  },
+  {
+    q: "DRAM is described as 'volatile'. What does this mean for the OS design?",
+    opts: [
+      "DRAM is prone to spontaneous bit flips under normal operation",
+      "Data in DRAM is lost when power is removed or the system crashes, so persistent storage requires separate hardware",
+      "DRAM is too slow to be used for running programs directly",
+      "DRAM can only be accessed by the OS kernel, not by user programs"
+    ],
+    ans: 1,
+    exp: "Volatile memory (like DRAM) loses its contents when power is removed. This is why persistent storage (hard drives, SSDs) and the file system are necessary — to ensure user data survives power loss or crashes, satisfying the 'persistence' theme of OS design."
+  },
+  {
+    q: "How does the OS use 'policy' in CPU virtualization?",
+    opts: [
+      "Policy defines the hardware interrupt frequency for the system clock",
+      "Policy determines which process gets to run on the CPU when multiple processes are ready",
+      "Policy sets the maximum amount of memory any single process can allocate",
+      "Policy controls which system calls are available to user-mode programs"
+    ],
+    ans: 1,
+    exp: "When two or more processes want to run at the same time, the OS must decide which one to schedule on the CPU. This decision is governed by a scheduling policy. Different policies (round-robin, priority-based, etc.) optimize for different goals such as fairness or throughput."
+  },
+  {
+    q: "Which of the following best describes virtualization in an operating system?",
+    opts: [
+      "The OS emulates an entirely different hardware architecture in software",
+      "The OS takes physical resources and transforms them into a more general, powerful, easy-to-use virtual form",
+      "The OS runs entirely inside a hypervisor managed by the hardware",
+      "Virtualization refers exclusively to running multiple operating systems on one machine"
+    ],
+    ans: 1,
+    exp: "Virtualization is the core OS technique of taking physical resources — processor, memory, disk — and presenting a virtual form that is more general and easier to use. For example, a single CPU appears as many virtual CPUs, and each process sees its own large private memory even if physical RAM is small. The OS is sometimes called a 'virtual machine' for this reason."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
