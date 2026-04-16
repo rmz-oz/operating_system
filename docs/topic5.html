@@ -68,7 +68,7 @@
   <p class="subtitle">Topic 5: TLB, Advanced Page Tables &amp; Swapping Mechanisms and Policies</p>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
-    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (45 Q)</button>
   </div>
 
   <!-- LESSON SECTION -->
@@ -303,14 +303,14 @@ Step 5: PhysAddr = PFN &lt;&lt; 12 | Offset</pre>
     <div class="score-row">
       <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
       <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
-      <span class="score-val" id="scoreval">0 / 30</span>
+      <span class="score-val" id="scoreval">0 / 45</span>
     </div>
     <div id="questions"></div>
   </div>
 </div>
 
 <script>
-const NQ = 30;
+const NQ = 45;
 const questions = [
   {
     q: "What is the primary purpose of the Translation Lookaside Buffer (TLB)?",
@@ -632,6 +632,171 @@ const questions = [
     ],
     ans: 1,
     exp: "At 0.001% miss rate: AMAT ≈ 100 + 0.00001 * 100,000 ≈ 101 ns. At 0.01% miss rate: AMAT ≈ 100 + 0.0001 * 100,000 ≈ 110 ns. While not exactly tenfold in absolute AMAT, the disk-penalty component grows 10×. This illustrates that even tiny increases in miss rate dramatically hurt performance because T_Disk >> T_Memory."
+  },
+  {
+    q: "What is the primary function of a Translation Lookaside Buffer (TLB)?",
+    opts: [
+      "To store the entire page table of a process.",
+      "To act as a software-based address translation tool.",
+      "To serve as a hardware cache for virtual-to-physical address translations.",
+      "To manage the swap space on the hard drive."
+    ],
+    ans: 2,
+    exp: "The TLB is part of the chip's memory-management unit (MMU) and acts as an address-translation cache to improve performance."
+  },
+  {
+    q: "Which type of locality is being utilized when a program accesses a memory address and then soon after accesses a nearby address?",
+    opts: [
+      "Temporal Locality",
+      "Spatial Locality",
+      "Logical Locality",
+      "Sequential Locality"
+    ],
+    ans: 1,
+    exp: "Spatial locality suggests that if a program accesses memory at address x, it will likely soon access memory near x."
+  },
+  {
+    q: "In a system with a \"Software-Managed TLB\" (common in RISC architectures), what happens on a TLB miss?",
+    opts: [
+      "The hardware automatically \"walks\" the page table.",
+      "The hardware raises an exception and jumps to a trap handler in the OS.",
+      "The process is immediately terminated.",
+      "The instruction is skipped."
+    ],
+    ans: 1,
+    exp: "On a TLB miss in RISC systems, the hardware raises an exception, pauses the instruction, and lets the OS trap handler find the translation."
+  },
+  {
+    q: "What is the purpose of the Address Space Identifier (ASID) field in a TLB?",
+    opts: [
+      "To identify the physical location of the hard drive.",
+      "To encrypt the virtual address.",
+      "To distinguish between translations of different processes during a context switch.",
+      "To count the number of memory accesses."
+    ],
+    ans: 2,
+    exp: "Providing an ASID in the TLB allows the system to distinguish which entry belongs to which process, preventing incorrect translations after a context switch."
+  },
+  {
+    q: "What is the main problem with using large \"Linear Page Tables\" in a 32-bit address space with 4KB pages?",
+    opts: [
+      "They are too slow to access.",
+      "They consume too much memory (e.g., 4MB per process).",
+      "They cannot store dirty bits.",
+      "They only work with segmentation."
+    ],
+    ans: 1,
+    exp: "Linear page tables for every process can be too large and consume significant memory, especially when the address space is sparsely used."
+  },
+  {
+    q: "How does a \"Multi-level Page Table\" save memory?",
+    opts: [
+      "By not allocating pages of the page table where the entries are invalid.",
+      "By compressing the page table entries.",
+      "By moving the entire page table to the TLB.",
+      "By using only one page table for all processes."
+    ],
+    ans: 0,
+    exp: "Multi-level page tables chop the table into page-sized units and only allocate space for portions of the address space that are actually being used."
+  },
+  {
+    q: "In a multi-level page table structure, what is the role of the \"Page Directory\"?",
+    opts: [
+      "To store the final physical addresses.",
+      "To act as a secondary cache for the CPU.",
+      "To track whether a specific page of the page table is valid and where it is located.",
+      "To manage the stack and heap segments."
+    ],
+    ans: 2,
+    exp: "The page directory contains page directory entries (PDEs), which indicate if a page of the page table is valid and provide its Page Frame Number (PFN)."
+  },
+  {
+    q: "What is \"Swap Space\"?",
+    opts: [
+      "Reserved space on the disk for moving portions of an address space that are not currently in demand.",
+      "A high-speed cache inside the CPU.",
+      "A segment of RAM used for sharing files.",
+      "The part of the OS that handles context switching."
+    ],
+    ans: 0,
+    exp: "Swap space is a reserved area on the disk used to \"stash away\" pages from memory to allow for larger address spaces than physical RAM."
+  },
+  {
+    q: "What does it mean if the \"Present Bit\" in a Page Table Entry is set to 0?",
+    opts: [
+      "The page translation is invalid and illegal.",
+      "The page is read-only.",
+      "The page is not in physical memory but resides on disk.",
+      "The page has been modified."
+    ],
+    ans: 2,
+    exp: "A present bit of 0 indicates the page is not in memory; it has been swapped to disk, and accessing it will cause a page fault."
+  },
+  {
+    q: "What is a \"Page Fault\"?",
+    opts: [
+      "A hardware error in the RAM module.",
+      "An access to a page that is not currently in physical memory.",
+      "When the CPU executes an illegal instruction.",
+      "When the page table becomes too large for memory."
+    ],
+    ans: 1,
+    exp: "A page fault occurs when a process attempts to access a page that has been swapped to disk, requiring the OS to bring it back into memory."
+  },
+  {
+    q: "Which page replacement policy is considered the \"Optimal Policy\"?",
+    opts: [
+      "Replacing the oldest page in memory.",
+      "Replacing a random page.",
+      "Replacing the page that will be accessed furthest in the future.",
+      "Replacing the most recently used page."
+    ],
+    ans: 2,
+    exp: "The optimal policy results in the fewest misses by replacing the page that will not be needed for the longest time."
+  },
+  {
+    q: "What is \"Belady's Anomaly\"?",
+    opts: [
+      "When a smaller cache results in more hits.",
+      "When the cache hit rate decreases (page faults increase) as the cache size gets larger.",
+      "When the TLB and Page Table have different translations.",
+      "When the disk speed is faster than the RAM speed."
+    ],
+    ans: 1,
+    exp: "Belady's Anomaly is a counter-intuitive situation, specifically seen in FIFO, where increasing memory results in worse performance."
+  },
+  {
+    q: "Which replacement policy takes advantage of the \"recency\" of memory accesses?",
+    opts: [
+      "FIFO",
+      "LRU (Least Recently Used)",
+      "Random",
+      "LFU (Least Frequently Used)"
+    ],
+    ans: 1,
+    exp: "LRU uses history by assuming that pages accessed recently are likely to be accessed again soon, evicting the one that hasn't been used for the longest time."
+  },
+  {
+    q: "How does the \"Clock Algorithm\" approximate LRU?",
+    opts: [
+      "By using a \"use bit\" that is set when a page is referenced and cleared by the OS.",
+      "By timing every memory access with the system clock.",
+      "By sorting all pages in a linear queue.",
+      "By randomly picking pages until it finds one with a 0 bit."
+    ],
+    ans: 0,
+    exp: "The clock algorithm uses a \"use bit\" (set by hardware) to give pages a \"second chance\" before eviction, approximating the behavior of LRU without high overhead."
+  },
+  {
+    q: "What is \"Thrashing\"?",
+    opts: [
+      "When the CPU is running at 100% efficiency.",
+      "When the OS deletes all invalid pages.",
+      "When memory is oversubscribed and the system spends most of its time swapping pages.",
+      "When the hard drive is disconnected."
+    ],
+    ans: 2,
+    exp: "Thrashing occurs when the memory demands of running processes exceed available RAM, leading to constant paging and a collapse in CPU utilization."
   }
 ];
 let answered = Array(NQ).fill(false);
