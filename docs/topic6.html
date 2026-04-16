@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 6: Concurrency, Thread API &amp; Locks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 6: Concurrency, Thread API &amp; Locks</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>1. Concurrency: An Introduction</h2>
+    <p>A <strong>thread</strong> is a new abstraction for a single running process. A <em>multi-threaded</em> program has more than one point of execution — effectively multiple Program Counters (PCs) that run concurrently. Unlike separate processes, all threads within the same program <strong>share the same address space</strong> and can therefore access the same data directly.</p>
+    <p>Each thread has its own PC and its own set of registers. When the OS switches from thread T1 to thread T2, the register state of T1 is saved into a <strong>Thread Control Block (TCB)</strong> and T2's state is restored — much like a process context switch, but the address space stays the same.</p>
+    <div class="info-box">
+      <strong>Key difference from processes:</strong> In a process context switch the page table (address space) is swapped. In a thread context switch the address space is shared; only registers and the stack pointer change.
+    </div>
+
+    <h3>Per-Thread Stack</h3>
+    <p>Each thread gets its own <strong>stack</strong> carved out of the shared address space. This means a two-threaded program has two stacks — Stack(1) at the top of memory and Stack(2) below the free region — while code and heap remain shared.</p>
+
+    <h3>Why Use Threads?</h3>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Parallelism</div>
+        <ul>
+          <li>Distribute work across multiple CPUs</li>
+          <li>Transforms slow single-threaded work into parallel computation</li>
+          <li>Called <em>parallelization</em></li>
+        </ul>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Overlap I/O with Computation</div>
+        <ul>
+          <li>One thread can block on slow I/O</li>
+          <li>Other threads continue running</li>
+          <li>Similar to how multiprogramming helps across processes</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Thread Creation Example</h3>
+    <pre>#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+void *mythread(void *arg) {
+    printf("%s\n", (char *) arg);
+    return NULL;
+}
+int main(int argc, char *argv[]) {
+    pthread_t p1, p2;
+    printf("main: begin\n");
+    Pthread_create(&amp;p1, NULL, mythread, "A");
+    Pthread_create(&amp;p2, NULL, mythread, "B");
+    Pthread_join(p1, NULL);
+    Pthread_join(p2, NULL);
+    printf("main: end\n");
+    return 0;
+}</pre>
+    <p>The execution order of "A" and "B" is <strong>non-deterministic</strong> — the scheduler decides which thread runs first. Three valid orderings exist: A then B, B then A, or interleaved.</p>
+
+    <hr>
+
+    <h2>2. Race Conditions and the Critical Section</h2>
+    <p>A <strong>race condition</strong> occurs when the result of a computation depends on the timing of thread execution. Consider two threads each executing <code>counter = counter + 1</code>. At the assembly level this expands to three instructions:</p>
+    <pre>mov 0x8049a1c, %eax   ; load counter into register
+add $0x1, %eax         ; increment register
+mov %eax, 0x8049a1c   ; store back to memory</pre>
+    <p>If the OS interrupts Thread 1 between the load and the store, and Thread 2 runs its own full increment, Thread 1 will overwrite Thread 2's result when it resumes. Both threads ran once, but the counter only increased by 1 instead of 2. The result is <strong>indeterminate</strong>.</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Race Condition</div>
+        <p style="font-size:13px">Result depends on the timing/interleaving of thread execution. Outcome is indeterminate.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Critical Section</div>
+        <p style="font-size:13px">A piece of code that accesses a shared variable/resource and must not be executed by more than one thread simultaneously.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Mutual Exclusion</div>
+        <p style="font-size:13px">The guarantee that only one thread executes the critical section at a time — the fundamental property locks provide.</p>
+      </div>
+    </div>
+    <div class="warning-box">
+      <strong>The wish for atomicity:</strong> Ideally we would have a single hardware instruction like <code>memory-add 0x8049a1c, $0x1</code> that performs load-increment-store as one indivisible unit. In general such instructions do not exist, so we use <strong>locks</strong> to simulate atomicity over multi-instruction sequences.
+    </div>
+
+    <hr>
+
+    <h2>3. Thread API (POSIX pthreads)</h2>
+
+    <h3>Creating Threads — pthread_create</h3>
+    <pre>int pthread_create(
+    pthread_t            *thread,
+    const pthread_attr_t *attr,
+    void                 *(*start_routine)(void *),
+    void                 *arg
+);</pre>
+    <ul>
+      <li><strong>thread</strong> — handle used to refer to the new thread later</li>
+      <li><strong>attr</strong> — attributes (stack size, scheduling priority); pass <code>NULL</code> for defaults</li>
+      <li><strong>start_routine</strong> — function the thread begins executing</li>
+      <li><strong>arg</strong> — single <code>void *</code> argument passed to the function; cast to any type needed</li>
+    </ul>
+    <p>To pass multiple values, pack them into a struct and pass a pointer to it:</p>
+    <pre>typedef struct __myarg_t {
+    int a;
+    int b;
+} myarg_t;
+
+void *mythread(void *arg) {
+    myarg_t *m = (myarg_t *) arg;
+    printf("%d %d\n", m-&gt;a, m-&gt;b);
+    return NULL;
+}</pre>
+
+    <h3>Waiting for Threads — pthread_join</h3>
+    <pre>int pthread_join(pthread_t thread, void **value_ptr);</pre>
+    <ul>
+      <li><strong>thread</strong> — which thread to wait for</li>
+      <li><strong>value_ptr</strong> — pointer to receive the thread's return value (pass <code>NULL</code> to ignore)</li>
+    </ul>
+    <p>The caller blocks until the specified thread finishes. The return value is a <code>void *</code>; if you need to return a struct, <code>malloc</code> it inside the thread (do <em>not</em> return a pointer to a local stack variable — the stack is gone after the thread exits).</p>
+
+    <h3>Locks — pthread_mutex</h3>
+    <pre>pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_lock(&amp;lock);
+x = x + 1;  // critical section
+pthread_mutex_unlock(&amp;lock);</pre>
+    <p>If no thread holds the lock, <code>pthread_mutex_lock</code> acquires it and returns immediately. If another thread holds it, the caller <strong>blocks</strong> until the lock is released. Two additional variants exist:</p>
+    <ul>
+      <li><code>pthread_mutex_trylock</code> — returns failure immediately if already held (non-blocking)</li>
+      <li><code>pthread_mutex_timelock</code> — blocks up to a specified timeout</li>
+    </ul>
+
+    <h3>Condition Variables</h3>
+    <pre>pthread_cond_t  init = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// Waiting thread
+pthread_mutex_lock(&amp;lock);
+while (initialized == 0)
+    pthread_cond_wait(&amp;init, &amp;lock);  // releases lock; re-acquires on wake
+pthread_mutex_unlock(&amp;lock);
+
+// Signalling thread
+pthread_mutex_lock(&amp;lock);
+initialized = 1;
+pthread_cond_signal(&amp;init);
+pthread_mutex_unlock(&amp;lock);</pre>
+    <div class="info-box">
+      <strong>pthread_cond_wait</strong> atomically releases the mutex and puts the thread to sleep. When woken by a signal, it re-acquires the mutex before returning. Always check the condition in a <code>while</code> loop (not <code>if</code>) to handle spurious wakeups.
+    </div>
+
+    <hr>
+
+    <h2>4. Lock Internals — Building a Lock</h2>
+    <p>Building a correct, efficient lock requires cooperation between software, hardware, and the OS. Any implementation is evaluated against three criteria:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Mutual Exclusion</div>
+        <p style="font-size:13px">Does the lock prevent multiple threads from being in the critical section simultaneously?</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Fairness</div>
+        <p style="font-size:13px">Does every contending thread eventually get the lock, or can some threads starve?</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Performance</div>
+        <p style="font-size:13px">How much time overhead does using the lock add, especially under contention with many threads?</p>
+      </div>
+    </div>
+
+    <h3>Approach 1 — Disable Interrupts</h3>
+    <pre>void lock()   { DisableInterrupts(); }
+void unlock() { EnableInterrupts();  }</pre>
+    <p>Earliest approach, designed for single-processor systems. Problems: requires too much trust (a malicious thread never calls unlock and monopolizes the CPU); does not work on multiprocessors; interrupt mask/unmask is slow on modern CPUs.</p>
+
+    <h3>Approach 2 — Simple Flag (Broken)</h3>
+    <pre>void lock(lock_t *mutex) {
+    while (mutex-&gt;flag == 1)  // TEST
+        ;                      // spin-wait
+    mutex-&gt;flag = 1;           // SET
+}</pre>
+    <p>Fails mutual exclusion: two threads can both observe <code>flag == 0</code> before either sets it to 1. Also wastes CPU with spin-waiting.</p>
+
+    <h3>Approach 3 — Test-And-Set (Spin Lock)</h3>
+    <pre>int TestAndSet(int *ptr, int new) {
+    int old = *ptr;
+    *ptr = new;
+    return old;   // atomic read-modify-write
+}
+
+void lock(lock_t *lock) {
+    while (TestAndSet(&amp;lock-&gt;flag, 1) == 1)
+        ;  // spin
+}
+void unlock(lock_t *lock) { lock-&gt;flag = 0; }</pre>
+    <p>TestAndSet is a <strong>hardware atomic instruction</strong>. It returns the old value and sets the new value in a single indivisible step. Correct (mutual exclusion). Not fair (can starve). Wastes CPU while spinning.</p>
+
+    <h3>Approach 4 — Compare-And-Swap</h3>
+    <pre>int CompareAndSwap(int *ptr, int expected, int new) {
+    int actual = *ptr;
+    if (actual == expected)
+        *ptr = new;
+    return actual;
+}
+void lock(lock_t *lock) {
+    while (CompareAndSwap(&amp;lock-&gt;flag, 0, 1) == 1)
+        ;  // spin
+}</pre>
+    <p>CAS updates the value only if it currently equals the expected value, then returns the actual old value. More powerful than TAS — it forms the basis of lock-free data structures. For a simple spin lock, behavior is identical to TestAndSet.</p>
+
+    <h3>Approach 5 — Load-Linked / Store-Conditional (LL/SC)</h3>
+    <pre>void lock(lock_t *lock) {
+    while (1) {
+        while (LoadLinked(&amp;lock-&gt;flag) == 1)
+            ;  // spin until zero
+        if (StoreConditional(&amp;lock-&gt;flag, 1) == 1)
+            return;  // success
+        // else: retry
+    }
+}</pre>
+    <p>LL loads a value and marks the address. SC succeeds only if no other store to that address has occurred since the LL. Used on MIPS, ARM, and RISC-V architectures.</p>
+
+    <h3>Approach 6 — Fetch-And-Add / Ticket Lock</h3>
+    <pre>int FetchAndAdd(int *ptr) {
+    int old = *ptr;
+    *ptr = old + 1;
+    return old;
+}
+void lock(lock_t *lock) {
+    int myturn = FetchAndAdd(&amp;lock-&gt;ticket);
+    while (lock-&gt;turn != myturn)
+        ;  // spin
+}
+void unlock(lock_t *lock) {
+    FetchAndAdd(&amp;lock-&gt;turn);
+}</pre>
+    <div class="success-box">
+      <strong>Ticket Lock advantage:</strong> Every thread that calls lock() gets a unique ticket number. The lock advances <code>turn</code> one step at a time, ensuring every thread eventually gets the lock — providing <strong>fairness (no starvation)</strong>.
+    </div>
+
+    <hr>
+
+    <h2>5. Avoiding Spinning — OS-Assisted Locks</h2>
+    <p>All spin-based approaches waste CPU cycles when a thread must wait. The solution is OS support to put waiting threads to sleep.</p>
+
+    <h3>Just Yield</h3>
+    <pre>void lock() {
+    while (TestAndSet(&amp;flag, 1) == 1)
+        yield();  // give up the CPU
+}</pre>
+    <p><code>yield()</code> moves the calling thread from <em>running</em> to <em>ready</em>. This avoids burning CPU on a full time slice but still has overhead from context switching and does not prevent starvation.</p>
+
+    <h3>Queue-Based Sleep Lock (park/unpark)</h3>
+    <p>The most robust approach: a <strong>queue</strong> tracks waiting threads; threads go to sleep (<code>park()</code>) instead of spinning, and are woken explicitly (<code>unpark(threadID)</code>) when the lock is released.</p>
+    <pre>void lock(lock_t *m) {
+    while (TestAndSet(&amp;m-&gt;guard, 1) == 1)
+        ;  // spin on guard only (brief)
+    if (m-&gt;flag == 0) {
+        m-&gt;flag = 1;   // acquire lock
+        m-&gt;guard = 0;
+    } else {
+        queue_add(m-&gt;q, gettid());
+        setpark();     // indicate we are about to sleep
+        m-&gt;guard = 0;
+        park();        // go to sleep
+    }
+}
+void unlock(lock_t *m) {
+    while (TestAndSet(&amp;m-&gt;guard, 1) == 1)
+        ;
+    if (queue_empty(m-&gt;q))
+        m-&gt;flag = 0;
+    else
+        unpark(queue_remove(m-&gt;q));  // hand lock to next waiter
+    m-&gt;guard = 0;
+}</pre>
+    <div class="warning-box">
+      <strong>Wakeup/waiting race:</strong> If the lock is released just before a thread calls <code>park()</code>, the thread sleeps forever. Solaris solves this with <code>setpark()</code> — if <code>unpark</code> arrives before <code>park</code> is called, <code>park</code> returns immediately without sleeping.
+    </div>
+
+    <h3>Two-Phase Locks</h3>
+    <p>A pragmatic hybrid: in the <strong>first phase</strong> the lock spins for a short time, hoping the holder will release it soon. If the lock is still not acquired, the thread enters the <strong>second phase</strong> and goes to sleep. This amortizes the context-switch cost when locks are typically held briefly.</p>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 30</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 30;
+const questions = [
+  {
+    q: "What is a thread?",
+    opts: [
+      "A separate process with its own address space",
+      "A new abstraction for a single running process that shares the address space with other threads",
+      "A hardware unit that executes instructions independently of the CPU",
+      "A kernel data structure used only for I/O operations"
+    ],
+    ans: 1,
+    exp: "A thread is a new abstraction for a single running process. Multiple threads within the same program share the same address space, which means they can access the same data. Each thread has its own Program Counter and registers, but not its own address space."
+  },
+  {
+    q: "What does a Thread Control Block (TCB) store?",
+    opts: [
+      "The page table entries for the thread's address space",
+      "The file descriptors opened by the thread",
+      "The register state of the thread when it is not running",
+      "The heap allocation metadata for the thread"
+    ],
+    ans: 2,
+    exp: "A TCB stores the register state (including the PC and all general-purpose registers) of a thread when it is context-switched out. When the thread is switched back in, the OS restores this saved state. The address space is not saved per-thread since all threads share it."
+  },
+  {
+    q: "When the OS performs a thread context switch (T1 to T2), what happens to the address space?",
+    opts: [
+      "The address space is fully swapped, just like in a process switch",
+      "A new page table is loaded for T2",
+      "The address space remains the same; only registers are saved/restored",
+      "The stack segment is deallocated and reallocated"
+    ],
+    ans: 2,
+    exp: "Thread context switches differ from process context switches in that the address space stays the same — all threads of a process share one address space. Only the register state (PC, stack pointer, general registers) is saved for T1 and restored for T2."
+  },
+  {
+    q: "In a two-threaded program, how many stacks exist in the address space?",
+    opts: [
+      "One shared stack for both threads",
+      "Two stacks, one per thread",
+      "Zero — threads use the heap for their local variables",
+      "Four stacks — two per thread for safety"
+    ],
+    ans: 1,
+    exp: "Each thread gets its own private stack carved out of the shared address space. With two threads there are two stacks. Code and heap remain shared. This is why returning a pointer to a local variable from a thread is dangerous — the stack frame will be gone once the thread exits."
+  },
+  {
+    q: "Which of the following is NOT a reason to use threads?",
+    opts: [
+      "To exploit parallelism across multiple CPUs",
+      "To overlap I/O with computation",
+      "To give each thread its own isolated address space",
+      "To avoid blocking the whole program on a slow disk read"
+    ],
+    ans: 2,
+    exp: "Threads share the same address space — isolation is not a benefit of threads (it is a benefit of separate processes). The main reasons to use threads are parallelism (using multiple CPUs) and I/O overlap (keeping the CPU busy while one thread waits on I/O)."
+  },
+  {
+    q: "Consider this thread creation call: Pthread_create(&p1, NULL, mythread, \"A\"). Which argument specifies the function the thread will run?",
+    opts: [
+      "&p1",
+      "NULL",
+      "mythread",
+      "\"A\""
+    ],
+    ans: 2,
+    exp: "The third argument to pthread_create is start_routine — the function pointer the new thread begins executing. The first argument is the thread handle, the second is attributes (NULL for defaults), and the fourth is the argument passed to that function."
+  },
+  {
+    q: "What is the purpose of pthread_join?",
+    opts: [
+      "To create a new thread",
+      "To terminate the calling thread immediately",
+      "To wait for a specified thread to finish and optionally collect its return value",
+      "To transfer ownership of a mutex from one thread to another"
+    ],
+    ans: 2,
+    exp: "pthread_join blocks the calling thread until the specified thread finishes. The second parameter receives the thread's return value (a void *). If the return value is not needed, pass NULL. Without join, the main thread might exit before child threads complete."
+  },
+  {
+    q: "What is the danger of returning a pointer to a local variable from a thread function?",
+    opts: [
+      "Local variables cannot be cast to void *",
+      "The thread's stack is freed when the thread exits, so the pointer becomes a dangling reference",
+      "pthread_join cannot collect pointer return values",
+      "The OS will zero-out local variables on thread exit for security"
+    ],
+    ans: 1,
+    exp: "When a thread returns, its stack is deallocated. Any pointer into that stack is now invalid — a classic dangling pointer bug. The correct approach is to malloc a struct inside the thread and return a pointer to heap memory, which persists after the thread exits."
+  },
+  {
+    q: "What is a race condition?",
+    opts: [
+      "A condition where the CPU runs out of registers",
+      "A bug where a thread exceeds its time quantum",
+      "A situation where the result of a program depends on the timing of thread execution",
+      "A scheduling policy that prioritizes the fastest thread"
+    ],
+    ans: 2,
+    exp: "A race condition occurs when two or more threads access shared data concurrently, and the final result depends on the exact interleaving of their operations. The outcome is indeterminate — it varies from run to run. The classic example is two threads incrementing a shared counter."
+  },
+  {
+    q: "Two threads each execute counter = counter + 1 starting from counter = 50. What is the WORST-CASE result due to a race condition?",
+    opts: [
+      "52 (correct)",
+      "51 (one update is lost)",
+      "50 (no update at all)",
+      "53 (double increment)"
+    ],
+    ans: 1,
+    exp: "In the worst case the race condition causes one update to be lost. Thread 1 loads 50, Thread 2 loads 50 and writes 51, then Thread 1 writes its stale value of 51 — overwriting Thread 2's result. The counter ends at 51 instead of 52. Both threads ran, but only one increment took effect."
+  },
+  {
+    q: "What is a critical section?",
+    opts: [
+      "The most performance-sensitive part of a program",
+      "Code that accesses a shared variable or resource and must not be executed concurrently by more than one thread",
+      "A system call that requires kernel privileges",
+      "The initialization section of a pthread program"
+    ],
+    ans: 1,
+    exp: "A critical section is any code that accesses shared state (shared variables, files, hardware) that must not be interleaved across threads. Executing a critical section concurrently leads to race conditions. Mutual exclusion via locks ensures only one thread is in the critical section at a time."
+  },
+  {
+    q: "What is the signature of pthread_create's start_routine parameter?",
+    opts: [
+      "int (*start_routine)(int)",
+      "void (*start_routine)(void)",
+      "void *(*start_routine)(void *)",
+      "int *(*start_routine)(int *)"
+    ],
+    ans: 2,
+    exp: "The start_routine must be declared as void *(*)(void *) — a function that takes a void pointer and returns a void pointer. This generic signature allows passing and returning any type via casting. Attempting to pass a function with a different signature causes a type mismatch."
+  },
+  {
+    q: "What does pthread_mutex_trylock do when the mutex is already held by another thread?",
+    opts: [
+      "It blocks until the mutex is released",
+      "It returns a failure code immediately without blocking",
+      "It forcibly takes the mutex from the holding thread",
+      "It throws a signal (SIGABRT) to the calling thread"
+    ],
+    ans: 1,
+    exp: "Unlike pthread_mutex_lock which blocks, trylock returns immediately with a non-zero error code (EBUSY) if the mutex is already held. This is useful when you want to attempt a lock but have alternative work to do if the lock is unavailable — avoiding deadlock in some designs."
+  },
+  {
+    q: "What does pthread_cond_wait do with the mutex when the calling thread is put to sleep?",
+    opts: [
+      "It keeps the mutex locked so no other thread can interfere",
+      "It transfers the mutex to the signalling thread",
+      "It atomically releases the mutex and puts the thread to sleep",
+      "It destroys the mutex and creates a new one on wakeup"
+    ],
+    ans: 2,
+    exp: "pthread_cond_wait atomically releases the mutex and puts the thread to sleep. This is essential — if the mutex were held during sleep, no other thread could acquire it to call signal, causing a deadlock. On wakeup, wait re-acquires the mutex before returning to the caller."
+  },
+  {
+    q: "Why should the condition in pthread_cond_wait be checked in a while loop rather than an if statement?",
+    opts: [
+      "Because while loops are faster than if statements",
+      "To handle spurious wakeups — the thread may be woken even when the condition is false",
+      "Because pthread_cond_wait can only be called from a loop",
+      "The POSIX standard requires it for syntactic reasons only"
+    ],
+    ans: 1,
+    exp: "Spurious wakeups — wakeups that occur without a corresponding signal — are permitted by the POSIX standard. Using a while loop ensures the condition is re-checked after every wakeup. If an if statement were used and a spurious wakeup occurred, the thread would proceed even though the condition is still false."
+  },
+  {
+    q: "What are the three criteria for evaluating a lock implementation?",
+    opts: [
+      "Speed, memory usage, and portability",
+      "Mutual exclusion, fairness, and performance",
+      "Atomicity, liveness, and determinism",
+      "Correctness, reliability, and scalability"
+    ],
+    ans: 1,
+    exp: "Locks are evaluated on: (1) Mutual exclusion — does it correctly prevent concurrent access to the critical section? (2) Fairness — does every waiting thread eventually acquire the lock, or can threads starve? (3) Performance — how much overhead does the lock add, particularly under contention?"
+  },
+  {
+    q: "Why does disabling interrupts as a locking mechanism fail on multiprocessor systems?",
+    opts: [
+      "Disabling interrupts is too slow on single CPUs",
+      "Disabling interrupts on one CPU does not prevent threads running on other CPUs from entering the critical section",
+      "Multiprocessors do not support interrupt masking",
+      "The OS cannot re-enable interrupts after they are disabled"
+    ],
+    ans: 1,
+    exp: "Disabling interrupts only affects the current CPU. On a multiprocessor, another CPU can run a thread that enters the same critical section simultaneously. Therefore interrupt-disable locking only works correctly on single-processor systems. It also gives too much power to user-level code."
+  },
+  {
+    q: "What is the fundamental problem with the simple flag-based lock (without hardware support)?",
+    opts: [
+      "The flag variable cannot be stored in memory",
+      "Two threads can both observe flag == 0 before either sets it to 1, violating mutual exclusion",
+      "The spin-wait loop uses too much stack space",
+      "Unlocking requires a system call which is too slow"
+    ],
+    ans: 1,
+    exp: "The test (while flag==1) and set (flag=1) are two separate non-atomic instructions. Thread 1 can observe flag==0, be interrupted, then Thread 2 observes flag==0 and sets flag=1, then Thread 1 resumes and also sets flag=1. Both threads are now in the critical section — mutual exclusion is violated."
+  },
+  {
+    q: "What does TestAndSet(ptr, new) return?",
+    opts: [
+      "The new value just written to *ptr",
+      "1 if the operation succeeded, 0 if it failed",
+      "The old value that was at *ptr before it was updated",
+      "The memory address of ptr"
+    ],
+    ans: 2,
+    exp: "TestAndSet fetches the old value at *ptr, stores new into *ptr, and returns the old value — all as one atomic operation. A spin lock uses this: if old == 1, the lock was already held (spin); if old == 0, the lock was free and has now been acquired."
+  },
+  {
+    q: "Evaluate the spin lock built with TestAndSet: which criterion does it FAIL?",
+    opts: [
+      "Mutual exclusion — two threads can be in the critical section",
+      "Correctness — TestAndSet is not truly atomic",
+      "Fairness — a spinning thread may spin forever and never acquire the lock",
+      "It fails all three criteria"
+    ],
+    ans: 2,
+    exp: "The spin lock correctly provides mutual exclusion — only one thread can observe old==0 and atomically claim the lock. However, it provides no fairness guarantee: the scheduler may keep choosing the same thread to run, while another thread spins indefinitely. It also wastes CPU while spinning, hurting performance."
+  },
+  {
+    q: "How does Compare-And-Swap (CAS) differ from TestAndSet?",
+    opts: [
+      "CAS only updates the value if it currently equals the expected value; TAS always writes unconditionally",
+      "CAS is faster than TAS because it uses fewer CPU cycles",
+      "TAS works on any value while CAS only works on boolean flags",
+      "There is no difference — they are identical instructions with different names"
+    ],
+    ans: 0,
+    exp: "CAS(ptr, expected, new) updates *ptr to new only if *ptr == expected, then returns the actual old value. TAS(ptr, new) always writes new to *ptr regardless of the current value. CAS is strictly more powerful and forms the basis of lock-free algorithms; TAS is sufficient for simple spin locks."
+  },
+  {
+    q: "What is the Store-Conditional (SC) instruction's success condition?",
+    opts: [
+      "It succeeds if the value at the address equals zero",
+      "It succeeds if no other store to the same address has occurred since the paired Load-Linked",
+      "It always succeeds on the first attempt",
+      "It succeeds if the lock flag is currently 1"
+    ],
+    ans: 1,
+    exp: "After a Load-Linked (LL) marks an address, the Store-Conditional (SC) succeeds only if no other thread has written to that address in the intervening time. If another store occurred (i.e., a race happened), SC fails and returns 0, forcing the thread to retry from the LL. This is used on MIPS, ARM, and RISC-V."
+  },
+  {
+    q: "What advantage does the Ticket Lock have over a simple spin lock using TestAndSet?",
+    opts: [
+      "It uses less memory",
+      "It is faster because it avoids spinning entirely",
+      "It guarantees fairness — every thread that requests the lock will eventually get it in order",
+      "It works without any hardware atomic instructions"
+    ],
+    ans: 2,
+    exp: "The ticket lock uses FetchAndAdd to assign each thread a unique ticket number. The lock holder advances 'turn' by 1 on unlock. Because every thread holds a unique ticket and turn advances monotonically, every waiting thread is served in order — no thread can starve. Simple spin locks (TAS/CAS) have no such ordering guarantee."
+  },
+  {
+    q: "What does the FetchAndAdd instruction do?",
+    opts: [
+      "Fetches a value from memory and adds it to a register without modifying memory",
+      "Atomically reads the current value at an address and increments it by 1, returning the old value",
+      "Adds two memory values together and stores the result at a third address",
+      "Fetches the next instruction and increments the Program Counter"
+    ],
+    ans: 1,
+    exp: "FetchAndAdd atomically reads the current value at *ptr, increments *ptr by 1, and returns the old value. The ticket lock uses it to give each arriving thread a unique, monotonically increasing ticket number — the key to its fairness property."
+  },
+  {
+    q: "What is the main performance problem with spin locks in general?",
+    opts: [
+      "They require two system calls per lock/unlock pair",
+      "A waiting thread burns its entire CPU time slice doing nothing but checking a flag",
+      "They always cause cache invalidation on every CPU",
+      "They require the lock to be stored in kernel memory"
+    ],
+    ans: 1,
+    exp: "When a thread spins waiting for a lock, it consumes its full time quantum checking the lock variable without doing any useful work. If the lock holder needs that same CPU to finish and release the lock, the spinning thread is also delaying the very work it's waiting for — making the situation even worse on single-CPU systems."
+  },
+  {
+    q: "What does the yield() system call do in the context of a lock implementation?",
+    opts: [
+      "It terminates the calling thread",
+      "It moves the calling thread from the running state to the ready state, giving up the CPU",
+      "It puts the calling thread to sleep until explicitly woken",
+      "It increments the thread's priority so it gets the CPU sooner"
+    ],
+    ans: 1,
+    exp: "yield() is a system call that deschedules the calling thread — it moves from running to ready and lets the scheduler pick another thread to run. Unlike spinning (which wastes the whole time slice), yielding gives up the CPU immediately. However, it still has context-switch overhead and does not solve starvation."
+  },
+  {
+    q: "In the queue-based sleep lock, what is the role of the 'guard' flag?",
+    opts: [
+      "It tracks whether the lock is currently held",
+      "It is a short-duration spin lock that protects the internal queue and flag from concurrent access",
+      "It stores the thread ID of the current lock owner",
+      "It counts how many threads are waiting in the queue"
+    ],
+    ans: 1,
+    exp: "The 'guard' is a spin lock used only briefly to protect the lock's internal state (the flag and queue). It prevents two threads from simultaneously modifying the queue structure. Unlike the main lock, the guard is released very quickly, so spinning on it is acceptable and causes little overhead."
+  },
+  {
+    q: "What is the wakeup/waiting race in the queue-based sleep lock, and how does Solaris solve it?",
+    opts: [
+      "Two threads wake up simultaneously; solved by having them race for the guard",
+      "A thread can be unparked before it calls park(), causing it to sleep forever; solved by setpark() which makes a subsequent park() return immediately",
+      "The queue can overflow; solved by using a linked list instead of an array",
+      "unpark() can be called on the wrong thread; solved by using thread IDs as queue keys"
+    ],
+    ans: 1,
+    exp: "The race: if Thread A releases the lock and calls unpark(B) before B calls park(), B will sleep forever — the wakeup was missed. Solaris's setpark() lets a thread declare it is 'about to park'. If unpark() arrives after setpark() but before park(), the park() call returns immediately without sleeping, avoiding the missed-wakeup bug."
+  },
+  {
+    q: "What is a two-phase lock?",
+    opts: [
+      "A lock that requires two separate calls — one to request and one to confirm acquisition",
+      "A lock that first spins for a while, then puts the thread to sleep if the lock is still not acquired",
+      "A lock that uses two separate mutex objects for read and write access",
+      "A lock with two priority levels — one for kernel threads and one for user threads"
+    ],
+    ans: 1,
+    exp: "A two-phase lock combines spinning and sleeping. In phase 1, the thread spins briefly hoping the lock holder releases it soon (avoiding the overhead of a context switch for short critical sections). In phase 2, if still not acquired, the thread goes to sleep and is woken only when the lock is free. Linux futex-based locks use this hybrid approach."
+  },
+  {
+    q: "Which of the following correctly initializes a POSIX mutex for static allocation?",
+    opts: [
+      "pthread_mutex_t lock = PTHREAD_MUTEX_INIT;",
+      "pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;",
+      "pthread_mutex_t lock = mutex_init();",
+      "pthread_mutex_t lock = MUTEX_INITIALIZER_STATIC;"
+    ],
+    ans: 1,
+    exp: "The POSIX-standard macro for statically initializing a mutex is PTHREAD_MUTEX_INITIALIZER. Similarly, condition variables use PTHREAD_COND_INITIALIZER. For dynamic initialization (e.g., heap-allocated mutexes), use pthread_mutex_init(&lock, NULL) instead."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
