@@ -68,7 +68,7 @@
   <p class="subtitle">Topic 2: Process, Process API &amp; Limited Direct Execution</p>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
-    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (45 Q)</button>
   </div>
 
   <!-- LESSON SECTION -->
@@ -310,14 +310,14 @@ printf("this should NOT print");</pre>
     <div class="score-row">
       <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
       <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
-      <span class="score-val" id="scoreval">0 / 30</span>
+      <span class="score-val" id="scoreval">0 / 45</span>
     </div>
     <div id="questions"></div>
   </div>
 </div>
 
 <script>
-const NQ = 30;
+const NQ = 45;
 const questions = [
   {
     q: "What is the formal definition of a process in operating systems?",
@@ -648,6 +648,171 @@ const questions = [
     ],
     ans: 1,
     exp: "Disk I/O is orders of magnitude slower than CPU operations. When a process issues a read/write, it cannot proceed until the data is available. The OS transitions it to Blocked and schedules another ready process on the CPU. When the disk signals completion (via interrupt), the OS moves the process back to Ready."
+  },
+  {
+    q: "What is the fundamental abstraction provided by the OS to represent a running program?",
+    opts: [
+      "The Trap Table",
+      "The File System",
+      "The Process",
+      "The System Call"
+    ],
+    ans: 2,
+    exp: "A process is defined as the fundamental abstraction of a program in execution."
+  },
+  {
+    q: "Which term describes the OS technique of running one process, stopping it, and then running another to create the illusion of many CPUs?",
+    opts: [
+      "Space multiplexing",
+      "Time sharing",
+      "Lazy loading",
+      "Direct execution"
+    ],
+    ans: 1,
+    exp: "Time sharing is the method used to implement CPU virtualization by alternating between different processes."
+  },
+  {
+    q: "In a process address space, where is memory allocated for function call frames and local variables?",
+    opts: [
+      "Heap",
+      "Data Segment",
+      "Stack",
+      "Text Segment"
+    ],
+    ans: 2,
+    exp: "The stack is used specifically to store function call frames, local variables, and return addresses."
+  },
+  {
+    q: "When the OS loads a program \"lazily,\" what does it actually do?",
+    opts: [
+      "It loads the entire program into RAM before starting.",
+      "It loads pieces of code or data only as they are needed during execution.",
+      "It delays the execution for several seconds.",
+      "It only runs the program in User Mode."
+    ],
+    ans: 1,
+    exp: "Lazy loading means the OS brings important program bits from disk into memory only when they are required."
+  },
+  {
+    q: "Which process state indicates that a process is not ready to run because it is waiting for an event, such as an I/O completion?",
+    opts: [
+      "Running",
+      "Ready",
+      "Blocked",
+      "Zombie"
+    ],
+    ans: 2,
+    exp: "A process becomes blocked when it initiates an operation (like a disk I/O request) that makes it unable to continue until the operation completes."
+  },
+  {
+    q: "What is the primary purpose of a Process Control Block (PCB)?",
+    opts: [
+      "To store all relevant information about a process, such as its PID and state.",
+      "To execute system calls directly on the CPU.",
+      "To manage the physical layout of the hard drive.",
+      "To handle the user's keyboard input."
+    ],
+    ans: 0,
+    exp: "The PCB is a data structure containing a process's unique identifier (PID), state, program counter, and register values."
+  },
+  {
+    q: "When fork() is called successfully, what value is returned to the child process?",
+    opts: [
+      "The PID of the parent",
+      "The PID of the child",
+      "0",
+      "-1"
+    ],
+    ans: 2,
+    exp: "To distinguish between the two paths, fork() returns 0 to the child and the child's PID to the parent."
+  },
+  {
+    q: "What happens to the code that follows an execvp() call in the same process block?",
+    opts: [
+      "It runs immediately after the new program finishes.",
+      "It runs in parallel with the new program.",
+      "It never executes because the process memory is replaced.",
+      "It is moved to the parent process."
+    ],
+    ans: 2,
+    exp: "exec() replaces the current process's memory space with the new program; therefore, any instructions after the successful call will not be executed."
+  },
+  {
+    q: "Why is the wait() system call useful for a parent process?",
+    opts: [
+      "It allows the parent to delay its execution until the child process finishes.",
+      "It allows the parent to delete the child's memory.",
+      "It allows the parent to change its own PID.",
+      "It forces the child to run in Kernel Mode."
+    ],
+    ans: 0,
+    exp: "wait() is used when an application wants to enforce an order, ensuring the parent doesn't return until the child has exited."
+  },
+  {
+    q: "What is a key advantage of \"Pipes\" over \"I/O redirection with temporary files\"?",
+    opts: [
+      "Pipes are more permanent than files.",
+      "Pipes allow the reader and writer processes to proceed in parallel.",
+      "Pipes do not require any memory.",
+      "Pipes are only available in Kernel Mode."
+    ],
+    ans: 1,
+    exp: "Unlike temporary files, pipes allow parallel execution and automatically clean themselves up without needing disk space."
+  },
+  {
+    q: "Which processor mode is used to prevent applications from gaining full access to hardware resources?",
+    opts: [
+      "User Mode",
+      "Kernel Mode",
+      "Direct Mode",
+      "Supervisor Mode"
+    ],
+    ans: 0,
+    exp: "In User Mode, applications are restricted from performing privileged operations to ensure system protection."
+  },
+  {
+    q: "What instruction is used by a program to transition from User Mode to Kernel Mode?",
+    opts: [
+      "Return-from-trap",
+      "Fork",
+      "Trap",
+      "Context switch"
+    ],
+    ans: 2,
+    exp: "A \"trap\" instruction raises the privilege level to kernel mode and jumps to a pre-configured handler in the OS."
+  },
+  {
+    q: "How does the OS regain control of the CPU if a process does not make any system calls (non-cooperative approach)?",
+    opts: [
+      "By shutting down the CPU.",
+      "By waiting for the user to press a key.",
+      "Through a timer interrupt.",
+      "By using the exec() command."
+    ],
+    ans: 2,
+    exp: "A timer interrupt suspends the current process every few milliseconds, allowing the OS to run and regain control."
+  },
+  {
+    q: "What occurs during a \"Context Switch\"?",
+    opts: [
+      "The OS saves the register state of the current process and restores the state of the next one.",
+      "The OS deletes a file from the disk.",
+      "The user switches between different windows on the desktop.",
+      "The CPU increases its clock speed."
+    ],
+    ans: 0,
+    exp: "A context switch involves saving the current process's registers onto its kernel stack and restoring the registers for the new process to be run."
+  },
+  {
+    q: "What can the OS do to prevent concurrency issues while it is handling an interrupt or trap?",
+    opts: [
+      "Restart the entire computer.",
+      "Disable interrupts during interrupt processing.",
+      "Increase the timer frequency.",
+      "Delete the process list."
+    ],
+    ans: 1,
+    exp: "To avoid complex concurrency problems, the OS can disable interrupts while it is already processing one."
   }
 ];
 let answered = Array(NQ).fill(false);
