@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Systems — Topic 3: Scheduling, MLFQ, Address Spaces, Translation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 1.75rem 0 0.75rem; color: #1a1a1a; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.2rem 0 0.5rem; }
+  p { font-size: 15px; line-height: 1.75; margin-bottom: 0.65rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  li { font-size: 14px; line-height: 1.8; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; background: #e8e8e4; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 0.75rem 0; font-family: 'SF Mono', monospace; line-height: 1.6; }
+  hr { border: none; border-top: 1px solid #e0e0d8; margin: 1.75rem 0; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+  .tab-btn { padding: 9px 22px; border-radius: 8px; border: 1.5px solid #d0d0c8; background: #fff; color: #555; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { background: #1a3a6e; color: #fff; border-color: #1a3a6e; }
+  .tab-btn:hover:not(.active) { background: #f0f0eb; }
+  .section { display: none; } .section.active { display: block; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .compare-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 1rem 0; }
+  .card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1rem 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .card-blue .card-title { color: #1a3a6e; }
+  .card-teal .card-title { color: #085041; }
+  .card-purple .card-title { color: #3C3489; }
+  .card-amber .card-title { color: #92400e; }
+  .info-box { background: #eef4ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .success-box { background: #f0f9ec; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem; margin: 0.85rem 0; font-size: 14px; line-height: 1.65; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; margin-right: 4px; }
+  .b-blue { background: #dbeafe; color: #1e40af; }
+  .b-amber { background: #fef3c7; color: #92400e; }
+  .b-teal { background: #d1fae5; color: #064e3b; }
+  .b-coral { background: #fee2e2; color: #7f1d1d; }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 1rem 0; }
+  .flow-step { background: #fff; border: 1px solid #e0e0d8; border-radius: 8px; padding: 0.85rem 0.75rem; text-align: center; }
+  .flow-step .step-num { font-size: 20px; font-weight: 700; color: #1a3a6e; }
+  .flow-step p { font-size: 12.5px; margin-top: 6px; margin-bottom: 0; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0d8; }
+  .score-track { flex: 1; height: 8px; background: #e5e5e0; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #3b7a3b; border-radius: 4px; transition: width 0.4s; width: 0%; }
+  .score-val { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+  .q-card { background: #fff; border: 1px solid #e0e0d8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-num { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+  .q-text { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; line-height: 1.5; }
+  .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0d8; margin-bottom: 8px; cursor: pointer; font-size: 14px; line-height: 1.55; transition: background 0.1s; }
+  .option:hover { background: #f5f5f0; }
+  .option .letter { font-weight: 700; min-width: 20px; color: #555; }
+  .option.correct { background: #f0f9ec; border-color: #4caf50; }
+  .option.correct .letter { color: #2e7d32; }
+  .option.wrong { background: #fff0f0; border-color: #ef9999; }
+  .option.wrong .letter { color: #c62828; }
+  .explanation { display: none; margin-top: 10px; padding: 12px 14px; background: #f8f8f4; border-radius: 8px; font-size: 14px; color: #444; line-height: 1.7; border-left: 4px solid #4caf50; }
+  .explanation.show { display: block; }
+  @media (max-width: 600px) { .compare-grid, .compare-grid-3, .flow { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Operating Systems</h1>
+  <p class="subtitle">Topic 3: Scheduling, MLFQ, Address Spaces &amp; Address Translation</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('lesson', this)">Lesson</button>
+    <button class="tab-btn" onclick="switchTab('quiz', this)">Quiz (30 Q)</button>
+  </div>
+
+  <!-- LESSON SECTION -->
+  <div id="lesson" class="section active">
+
+    <h2>Scheduling Metrics &amp; Basic Algorithms</h2>
+    <p>A scheduler must decide which ready process gets the CPU next. To compare schedulers fairly, we use two core metrics:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Turnaround Time</div>
+        <p style="font-size:13px;line-height:1.6"><strong>T<sub>turnaround</sub> = T<sub>completion</sub> &minus; T<sub>arrival</sub></strong><br>Measures how long a job takes from arrival to completion. Optimizing turnaround favors running shorter jobs first.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Response Time</div>
+        <p style="font-size:13px;line-height:1.6"><strong>T<sub>response</sub> = T<sub>firstrun</sub> &minus; T<sub>arrival</sub></strong><br>Measures how quickly a job first gets the CPU. Critical for interactive systems where users expect immediate feedback.</p>
+      </div>
+    </div>
+    <div class="warning-box">
+      <strong>The core trade-off:</strong> Optimizing turnaround time typically hurts response time and vice versa. Optimizing fairness hurts turnaround. No single algorithm wins on all metrics simultaneously.
+    </div>
+
+    <h3>First In, First Out (FIFO / FCFS)</h3>
+    <p>Jobs run in arrival order to completion. Simple and easy to implement, but suffers from the <strong>convoy effect</strong> — short jobs get stuck behind a long-running job, causing poor average turnaround time. Example: A(100s), B(10s), C(10s) all arrive at t=0; average turnaround = (100+110+120)/3 = 110s.</p>
+
+    <h3>Shortest Job First (SJF)</h3>
+    <p>Run the shortest job first, then the next shortest. Non-preemptive. Optimal turnaround when all jobs arrive simultaneously. Fails badly when jobs arrive at different times — a long job that started early cannot be preempted even if a shorter job arrives.</p>
+
+    <h3>Shortest Time-to-Completion First (STCF)</h3>
+    <p>Adds preemption to SJF. When a new job arrives, compare its remaining time to all other jobs' remaining times and run whichever has the least time left. Also called Preemptive Shortest Job First (PSJF). Optimal turnaround time among preemptive schedulers.</p>
+    <div class="info-box">
+      <strong>STCF example:</strong> A arrives at t=0 (needs 100s); B and C arrive at t=10 (each needs 10s). STCF preempts A, runs B then C, then resumes A. Average turnaround = (120 + (20&minus;10) + (30&minus;10)) / 3 = 50s — far better than SJF's 103.33s in this scenario.
+    </div>
+
+    <h3>Round Robin (RR)</h3>
+    <p>Time-slicing scheduler: run each job for a fixed <strong>time slice</strong> (quantum), then switch to the next job in the queue, cycling until all jobs finish. Excellent for response time but poor for turnaround time. The length of the time slice is a critical parameter:</p>
+    <div class="compare-grid">
+      <div class="card card-teal">
+        <div class="card-title">Short time slice</div>
+        <p style="font-size:13px;line-height:1.6">Better response time. But context-switching overhead dominates and throughput drops.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Long time slice</div>
+        <p style="font-size:13px;line-height:1.6">Lower context-switch overhead. But response time worsens and the system becomes less interactive.</p>
+      </div>
+    </div>
+
+    <h3>Incorporating I/O</h3>
+    <p>When a job issues an I/O request it blocks and no longer needs the CPU. The scheduler should <strong>overlap</strong> computation with I/O: while one job waits for I/O to complete, another job runs on the CPU. When the I/O finishes, the OS raises an interrupt and moves the job back to the ready state.</p>
+
+    <hr>
+
+    <h2>Multi-Level Feedback Queue (MLFQ)</h2>
+    <p>MLFQ solves a fundamental dilemma: how to optimize turnaround time (like SJF) without knowing job lengths in advance, while also minimizing response time for interactive jobs. It <strong>learns from past behavior</strong> to predict the future.</p>
+
+    <h3>Basic Structure</h3>
+    <p>MLFQ maintains several queues, each with a different priority level. A job ready to run sits in exactly one queue. Jobs in higher-priority queues run before lower-priority ones. Among jobs in the same queue, Round Robin is used.</p>
+    <div class="success-box">
+      <strong>Rule 1:</strong> If Priority(A) &gt; Priority(B), A runs (B doesn't).<br>
+      <strong>Rule 2:</strong> If Priority(A) = Priority(B), A &amp; B run in Round Robin.<br>
+      <strong>Rule 3:</strong> When a job enters the system, it is placed at the highest priority.<br>
+      <strong>Rule 4:</strong> Once a job uses up its time allotment at a given level (regardless of how many times it has given up the CPU), its priority is reduced.<br>
+      <strong>Rule 5:</strong> After some time period S, move all jobs in the system to the topmost queue (Priority Boost).
+    </div>
+
+    <h3>Priority Adjustment Logic</h3>
+    <p>MLFQ infers job type from behavior. A job that repeatedly gives up the CPU (I/O-bound, interactive) stays at high priority. A job that keeps consuming its full time slice (CPU-bound, long-running) gets demoted to a lower queue. This approximates SJF without needing to know job lengths upfront.</p>
+
+    <h3>Problems with Naive MLFQ</h3>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Starvation</div>
+        <p style="font-size:13px;line-height:1.6">Too many interactive jobs at high priority can starve long-running CPU jobs, which never receive CPU time.</p>
+      </div>
+      <div class="card card-amber">
+        <div class="card-title">Gaming</div>
+        <p style="font-size:13px;line-height:1.6">A malicious job can issue an I/O just before its time slice expires to stay at high priority and monopolize the CPU.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Behavior Change</div>
+        <p style="font-size:13px;line-height:1.6">A job that starts CPU-bound may later become I/O-bound. Without priority boost, it remains stuck at low priority forever.</p>
+      </div>
+    </div>
+
+    <h3>Solutions</h3>
+    <p><strong>Priority Boost (Rule 5):</strong> Periodically (every period S), move all jobs to the topmost queue. This prevents starvation and adapts to behavior changes. <strong>Better Accounting (Rule 4 rewrite):</strong> Track the total CPU time a job uses at a level — not just whether it voluntarily yielded. Once it exhausts its allotment, demote it, regardless of how many I/O yields it performed. This defeats gaming.</p>
+
+    <h3>MLFQ Tuning in Real Systems</h3>
+    <p>Higher-priority queues use <strong>shorter time slices</strong> (e.g., 10ms) for snappy response. Lower-priority queues use <strong>longer time slices</strong> (e.g., 100ms) to amortize context-switch cost for CPU-bound jobs. Solaris implements MLFQ with 60 queues, slowly increasing time slices, and a priority boost roughly every 1 second. FreeBSD computes priority from CPU usage history (decay-based formula) rather than discrete queues.</p>
+
+    <hr>
+
+    <h2>Address Spaces — Memory Virtualization</h2>
+    <p>Early systems loaded one program into memory at a time — the OS was simply a library sitting at the bottom of RAM. As machines became more expensive, <strong>multiprogramming</strong> emerged: load multiple processes into memory and switch between them to maximize CPU utilization.</p>
+
+    <h3>The Address Space Abstraction</h3>
+    <p>The OS creates an <strong>address space</strong> — a clean abstraction that gives each process the illusion of owning all of memory. Every address space contains three key regions:</p>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Code (Text)</div>
+        <p style="font-size:13px;line-height:1.6">Where program instructions live. Loaded from the executable. Typically read-only and placed at low addresses (e.g., 0KB).</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Heap</div>
+        <p style="font-size:13px;line-height:1.6">Dynamically allocated memory (<code>malloc</code> in C, <code>new</code> in OO languages). Grows upward from after the code segment.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Stack</div>
+        <p style="font-size:13px;line-height:1.6">Stores return addresses, local variables, and function arguments. Grows downward from the top of the address space.</p>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>Every address a running program sees is virtual.</strong> The OS (with hardware help) translates each virtual address into the actual physical location in RAM. Programs never see or touch physical addresses directly.
+    </div>
+    <pre>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+int main() {
+    printf("code  : %p\n", (void *) main);
+    printf("heap  : %p\n", (void *) malloc(1));
+    int x = 3;
+    printf("stack : %p\n", (void *) &amp;x);
+    return 0;
+}</pre>
+    <p>On a 64-bit Linux machine this prints three very different virtual addresses: code near <code>0x400000</code>, heap near <code>0xcf2000</code>, and stack near <code>0x7fff9ca28000</code> — all virtual, all translated to physical RAM by the OS at runtime.</p>
+
+    <h3>Goals of Memory Virtualization</h3>
+    <ul>
+      <li><strong>Ease of use:</strong> Each process sees a simple, large, contiguous address space starting at 0.</li>
+      <li><strong>Efficiency:</strong> Translation must be fast and use minimal memory overhead.</li>
+      <li><strong>Isolation &amp; protection:</strong> One process cannot read or write another process's memory, nor corrupt the OS.</li>
+    </ul>
+
+    <hr>
+
+    <h2>Address Translation — Base and Bounds</h2>
+    <p>The OS virtualizes memory using a strategy similar to Limited Direct Execution for the CPU: let the hardware do the translation efficiently, but keep the OS in control of setting things up and handling exceptions.</p>
+
+    <h3>Dynamic Relocation</h3>
+    <p>The simplest hardware mechanism is the <strong>base and bounds</strong> register pair (one pair per CPU). When the OS loads a process, it sets:</p>
+    <div class="compare-grid">
+      <div class="card card-blue">
+        <div class="card-title">Base Register</div>
+        <p style="font-size:13px;line-height:1.6">Holds the starting physical address of the process's address space. Every virtual address is added to this value to get the physical address.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Bounds Register</div>
+        <p style="font-size:13px;line-height:1.6">Holds the size (or end) of the address space. Any access beyond this limit raises a hardware exception — protecting other processes and the OS.</p>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>Translation formula:</strong> physical address = virtual address + base<br>
+      <strong>Bounds check:</strong> 0 &le; virtual address &lt; bounds (else: protection fault)
+    </div>
+    <pre>; Example: base = 32KB, process virtual address space = 16KB
+128 : movl 0x0(%ebx), %eax   ; virtual fetch at 128  → physical 32KB + 128 = 32896
+132 : addl $0x03, %eax        ; no memory reference
+135 : movl %eax, 0x0(%ebx)   ; virtual store at 15KB → physical 32KB + 15KB = 47KB</pre>
+
+    <h3>Hardware Requirements for Base &amp; Bounds</h3>
+    <ul>
+      <li><strong>Privileged mode:</strong> User processes cannot execute privileged instructions (e.g., modifying base/bounds registers).</li>
+      <li><strong>Base and bounds registers:</strong> One pair per CPU for address translation and bounds checking.</li>
+      <li><strong>Translation circuitry:</strong> Hardware computes physical address and checks bounds on every memory access.</li>
+      <li><strong>Exception handling:</strong> Hardware raises an exception on out-of-bounds access; OS registers exception handlers.</li>
+    </ul>
+
+    <h3>OS Responsibilities at Three Junctures</h3>
+    <div class="compare-grid-3">
+      <div class="card card-blue">
+        <div class="card-title">Process Start</div>
+        <p style="font-size:13px;line-height:1.6">OS searches the <strong>free list</strong> for a contiguous region of physical memory large enough for the process's address space, then sets base and bounds.</p>
+      </div>
+      <div class="card card-teal">
+        <div class="card-title">Process Termination</div>
+        <p style="font-size:13px;line-height:1.6">OS places the memory region back on the free list so it can be reused by future processes.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Context Switch</div>
+        <p style="font-size:13px;line-height:1.6">OS saves the current base/bounds values into the Process Control Block (PCB) and loads the new process's saved values into the hardware registers.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem"><button class="tab-btn" onclick="switchTab('quiz', this)">Go to Quiz</button></div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz" class="section">
+    <div class="score-row">
+      <span style="font-size:14px;font-weight:600;min-width:55px">Score</span>
+      <div class="score-track"><div class="score-fill" id="scorefill"></div></div>
+      <span class="score-val" id="scoreval">0 / 30</span>
+    </div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script>
+const NQ = 30;
+const questions = [
+  {
+    q: "How is turnaround time defined for a scheduled job?",
+    opts: [
+      "The time from when the job first runs to when it completes",
+      "The time from when the job arrives to when it first gets the CPU",
+      "The time from when the job arrives to when it completes",
+      "The time the job spends waiting in the ready queue"
+    ],
+    ans: 2,
+    exp: "Turnaround time = T_completion - T_arrival. It measures the total elapsed time from when a job enters the system to when it finishes. When all jobs arrive at time 0, turnaround equals completion time."
+  },
+  {
+    q: "What is the 'convoy effect' in FIFO scheduling?",
+    opts: [
+      "Short jobs block longer jobs from receiving CPU time",
+      "Multiple short jobs queue up behind one long-running job, causing high average turnaround time",
+      "I/O-bound jobs repeatedly preempt CPU-bound jobs",
+      "The scheduler switches so frequently that context-switch overhead dominates"
+    ],
+    ans: 1,
+    exp: "The convoy effect occurs when a long CPU-bound job runs first, blocking several shorter jobs behind it. For example, if A needs 100s and B, C need 10s each, running A first gives average turnaround (100+110+120)/3 = 110s — much worse than running short jobs first."
+  },
+  {
+    q: "Shortest Job First (SJF) is non-preemptive. What problem does this cause when jobs arrive at different times?",
+    opts: [
+      "SJF cannot handle jobs with equal burst times",
+      "A short job that arrives after a long job has already started must wait until the long job finishes",
+      "SJF requires knowing the exact priority of every job",
+      "SJF degrades into FIFO when arrival times differ"
+    ],
+    ans: 1,
+    exp: "Because SJF is non-preemptive, once a long job starts running it cannot be interrupted. If B and C (each 10s) arrive at t=10 while A (100s) is already running, they must wait until t=100 before they can execute, giving average turnaround = (100 + 100 + 110)/3 = 103.33s."
+  },
+  {
+    q: "What distinguishes STCF from SJF?",
+    opts: [
+      "STCF uses multiple queues while SJF uses a single queue",
+      "STCF adds preemption — when a new job arrives, the job with the least time remaining always runs",
+      "STCF tracks response time rather than turnaround time",
+      "STCF requires all jobs to arrive simultaneously"
+    ],
+    ans: 1,
+    exp: "STCF (Shortest Time-to-Completion First), also called PSJF, adds preemption to SJF. Whenever a new job arrives, the scheduler compares all remaining times and preempts the current job if a shorter one is available. This gives optimal average turnaround time for preemptive schedulers."
+  },
+  {
+    q: "How is response time defined?",
+    opts: [
+      "T_completion - T_arrival",
+      "T_firstrun - T_arrival",
+      "T_completion - T_firstrun",
+      "T_arrival - T_firstrun"
+    ],
+    ans: 1,
+    exp: "Response time = T_firstrun - T_arrival. It measures how quickly a job first gets to run on the CPU after arriving. This metric is critical for interactive systems where users expect immediate feedback when they type or click."
+  },
+  {
+    q: "Why is Round Robin (RR) poor for turnaround time even though it has good response time?",
+    opts: [
+      "RR does not allow I/O operations while jobs are running",
+      "RR stretches each job out over time by interleaving them, so all jobs finish late",
+      "RR always picks the job with the highest priority, ignoring short jobs",
+      "RR incurs zero context-switch overhead, making it faster but unfair"
+    ],
+    ans: 1,
+    exp: "RR spreads CPU time evenly, so jobs finish close to the same time — all at the end. For example, 3 jobs of 5s each with 1s quantum: all finish around t=15, giving average turnaround of (13+14+15)/3 = 14s. SJF would give (5+10+15)/3 = 10s."
+  },
+  {
+    q: "A system designer shortens the RR time slice from 100ms to 1ms. What is the main downside?",
+    opts: [
+      "Response time worsens because jobs wait longer between turns",
+      "Context-switching overhead begins to dominate overall performance",
+      "Turnaround time improves dramatically at the cost of memory usage",
+      "The system can no longer handle I/O-bound jobs"
+    ],
+    ans: 1,
+    exp: "A very short time slice means the OS context-switches very frequently. Each switch saves and restores registers, flushes caches, and performs TLB operations — all overhead. If the time slice is shorter than the overhead cost, the CPU spends more time switching than doing useful work."
+  },
+  {
+    q: "When a process issues an I/O request, what should the scheduler do to maximize CPU utilization?",
+    opts: [
+      "Suspend the entire system until the I/O completes",
+      "Keep the process on the CPU so it can process the I/O result immediately",
+      "Run another ready process on the CPU while the first process is blocked waiting for I/O",
+      "Reduce the blocked process's priority so it doesn't starve other processes"
+    ],
+    ans: 2,
+    exp: "I/O operations are slow compared to CPU speed. While one process is blocked waiting for I/O, the CPU would otherwise sit idle. By running another ready process during that time, the OS overlaps computation with I/O and maximizes CPU utilization."
+  },
+  {
+    q: "What are the two main objectives of the Multi-Level Feedback Queue (MLFQ)?",
+    opts: [
+      "Maximize throughput and minimize memory usage",
+      "Optimize turnaround time and minimize response time without knowing job lengths in advance",
+      "Ensure fairness among all jobs and prevent any job from ever starving",
+      "Minimize context switches and maximize CPU utilization"
+    ],
+    ans: 1,
+    exp: "MLFQ aims to optimize turnaround time (by running shorter jobs first, like SJF) while also minimizing response time for interactive jobs — all without requiring prior knowledge of how long each job will run. It learns from observed behavior instead."
+  },
+  {
+    q: "According to MLFQ Rule 3, where is a new job placed when it enters the system?",
+    opts: [
+      "At the lowest priority queue",
+      "At a random queue based on its estimated burst time",
+      "At the highest priority queue",
+      "At the same queue as the currently running job"
+    ],
+    ans: 2,
+    exp: "Rule 3 states: when a job enters the system, it is placed at the highest priority queue. This gives all new jobs the benefit of the doubt — they are assumed to be short, interactive jobs until they prove otherwise by using up their full time allotment."
+  },
+  {
+    q: "According to the refined MLFQ Rule 4, when is a job's priority reduced?",
+    opts: [
+      "Every time the job voluntarily yields the CPU before its time slice expires",
+      "When the job has been in the queue for longer than the priority boost period S",
+      "Once the job uses up its total time allotment at its current level, regardless of how many times it gave up the CPU",
+      "After the job completes one I/O operation"
+    ],
+    ans: 2,
+    exp: "The refined Rule 4 tracks the cumulative CPU time a job uses at a given queue level. Once that total reaches the allotment, the job is demoted — regardless of whether it yielded frequently via I/O. This prevents gaming, where a job could issue I/O just before each time slice expires to stay at high priority."
+  },
+  {
+    q: "MLFQ Rule 5 states that after period S, all jobs are moved to the topmost queue. Which two problems does this 'Priority Boost' solve?",
+    opts: [
+      "Convoy effect and priority inversion",
+      "Starvation of long-running jobs and failure to adapt when a job's behavior changes",
+      "Gaming the scheduler and excessive context switching",
+      "Memory fragmentation and TLB misses"
+    ],
+    ans: 1,
+    exp: "The priority boost solves starvation: long-running jobs that have sunk to the lowest queue get a fresh chance at the CPU. It also solves the problem of behavior change: a job that was CPU-bound but becomes I/O-bound will be boosted back to high priority where it belongs."
+  },
+  {
+    q: "A process runs for 99% of its time slice, then issues an I/O request, stays at high priority, and repeats. Which MLFQ problem does this illustrate?",
+    opts: [
+      "Starvation",
+      "Priority inversion",
+      "Gaming the scheduler",
+      "The convoy effect"
+    ],
+    ans: 2,
+    exp: "This is gaming the scheduler. By yielding just before the time slice expires, a process under the old Rules 4a/4b would never be demoted. The fix is the refined Rule 4: track total CPU time used at each level — not just whether the job yielded — and demote when that total is exhausted."
+  },
+  {
+    q: "In MLFQ, why do higher-priority queues use shorter time slices while lower-priority queues use longer ones?",
+    opts: [
+      "Higher-priority jobs are always shorter, so they need less time per slice",
+      "High-priority queues serve interactive jobs that need quick responses; low-priority queues serve long CPU-bound jobs where switching overhead should be amortized",
+      "Longer time slices at low priority prevent starvation by giving those jobs more CPU each turn",
+      "The hardware only supports one time-slice length per priority level"
+    ],
+    ans: 1,
+    exp: "Interactive and I/O-bound jobs sit at high priority and need fast response time — short slices (e.g., 10ms) keep them responsive. CPU-bound jobs that have sunk to low priority are long-running; giving them longer slices (e.g., 100ms) reduces context-switch overhead and improves throughput."
+  },
+  {
+    q: "What is an address space?",
+    opts: [
+      "The physical RAM chips installed in the machine",
+      "The OS's internal table mapping process IDs to memory regions",
+      "The running program's view of memory — containing its code, heap, and stack — as presented by the OS",
+      "The region of memory reserved exclusively for the OS kernel"
+    ],
+    ans: 2,
+    exp: "An address space is the abstraction the OS creates for each running process. It gives the program the illusion of owning all of memory, with its code at low addresses, the heap growing upward above the code, and the stack growing downward from the top. Every address in this space is virtual."
+  },
+  {
+    q: "In a process's address space, the heap grows ______ and the stack grows ______.",
+    opts: [
+      "downward; upward",
+      "upward; downward",
+      "upward; upward",
+      "downward; downward"
+    ],
+    ans: 1,
+    exp: "The heap grows upward (toward higher addresses) as the program calls malloc/new to dynamically allocate memory. The stack grows downward (toward lower addresses) as functions are called and local variables are pushed. They grow toward each other from opposite ends of the address space."
+  },
+  {
+    q: "When a C program calls malloc(), what type of call is that?",
+    opts: [
+      "A system call that directly asks the OS to allocate physical memory",
+      "A library call (libc) that may internally invoke a system call like brk() to expand the heap",
+      "A hardware interrupt that suspends the process until memory is available",
+      "A kernel call that bypasses user mode entirely"
+    ],
+    ans: 1,
+    exp: "malloc() is a library call in libc, not a system call. It manages a heap internally and only calls the OS (via brk() or mmap()) when it needs to expand the heap. The distinction matters: library calls are in user mode, system calls cross into kernel mode."
+  },
+  {
+    q: "A program prints the address of a local variable as 0x7fff9ca28000. What kind of address is this?",
+    opts: [
+      "A physical address pointing directly to a DRAM location",
+      "A kernel address that only the OS can access",
+      "A virtual address that the OS will translate to a physical address at runtime",
+      "A disk sector address used by the file system"
+    ],
+    ans: 2,
+    exp: "Every address visible to a running program is virtual. The large value 0x7fff... is typical of stack addresses on 64-bit Linux — a virtual address in the process's address space. The OS and hardware (via the MMU) transparently translate it to the actual physical DRAM location."
+  },
+  {
+    q: "What are the three main goals of memory virtualization?",
+    opts: [
+      "Speed, security, and redundancy",
+      "Ease of use (large contiguous space), efficiency (fast translation with low overhead), and isolation/protection",
+      "Compression, encryption, and persistence",
+      "Paging, segmentation, and swapping"
+    ],
+    ans: 1,
+    exp: "Memory virtualization aims to be easy to use (each process sees a simple large address space starting at 0), efficient (hardware translation is fast with minimal overhead), and protective/isolated (one process cannot access another's memory or the OS's memory)."
+  },
+  {
+    q: "In the base-and-bounds mechanism, how is a virtual address translated to a physical address?",
+    opts: [
+      "physical address = virtual address × bounds",
+      "physical address = virtual address - base",
+      "physical address = virtual address + base",
+      "physical address = base / virtual address"
+    ],
+    ans: 2,
+    exp: "The hardware adds the base register value to the virtual address: physical address = virtual address + base. For example, if base = 32KB and the virtual address is 15KB, the physical address is 32KB + 15KB = 47KB. This allows the OS to place a process anywhere in physical memory while the program always uses addresses starting from 0."
+  },
+  {
+    q: "A process with base=32KB and bounds=16KB tries to access virtual address 20KB. What happens?",
+    opts: [
+      "The hardware translates it to physical address 52KB successfully",
+      "The hardware raises a protection fault because 20KB >= 16KB (the bounds)",
+      "The OS automatically extends the bounds register to accommodate the access",
+      "The access succeeds and is mapped to physical address 20KB"
+    ],
+    ans: 1,
+    exp: "The bounds check requires 0 <= virtual address < bounds. Here 20KB is not less than bounds=16KB, so the hardware raises a protection exception. The OS exception handler is invoked and typically terminates the offending process. This mechanism prevents processes from accessing memory outside their address space."
+  },
+  {
+    q: "Which hardware component(s) are specifically required to implement base-and-bounds address translation?",
+    opts: [
+      "Only a timer interrupt; no special memory hardware is needed",
+      "A base register and a bounds register per CPU, plus translation circuitry that checks every memory access",
+      "A Translation Lookaside Buffer (TLB) and page table per process",
+      "A dedicated DMA controller and memory bus arbiter"
+    ],
+    ans: 1,
+    exp: "Base-and-bounds needs: (1) a base register holding the start of physical memory for the process, (2) a bounds register holding the size limit, and (3) hardware circuitry that performs the addition and bounds check on every memory access automatically. TLBs and page tables are for more advanced paging-based schemes."
+  },
+  {
+    q: "What is the 'free list' maintained by the OS?",
+    opts: [
+      "A list of processes that have voluntarily released the CPU",
+      "A log of all system calls made since the last reboot",
+      "A data structure tracking ranges of physical memory not currently in use",
+      "A list of files that have been deleted but not yet overwritten on disk"
+    ],
+    ans: 2,
+    exp: "The free list tracks which ranges of physical memory are available for allocation. When a new process starts, the OS searches the free list for a region large enough for the process's address space, removes it from the list, and sets the base register. When a process terminates, its region is added back to the free list."
+  },
+  {
+    q: "During a context switch, what does the OS do with the base and bounds registers?",
+    opts: [
+      "It clears both registers to zero to prevent the old process from being accessed",
+      "It saves the current base and bounds values into the outgoing process's PCB, then loads the incoming process's saved values into the registers",
+      "It leaves the registers unchanged — the new process will set them via a system call",
+      "It asks the hardware to automatically swap the registers using a dedicated context-switch instruction"
+    ],
+    ans: 1,
+    exp: "Each process has its own base and bounds values stored in its Process Control Block (PCB). On a context switch, the OS saves the running process's register values into its PCB and loads the newly scheduled process's values from its PCB into the hardware registers. This gives each process its own protected view of memory."
+  },
+  {
+    q: "Why does early-era OS design (one process in memory at a time) have poor utilization?",
+    opts: [
+      "Early CPUs could not execute instructions fast enough",
+      "When the single loaded process performs I/O, the CPU sits idle — there is no other process to run",
+      "Early OSes lacked system calls, so programs had to busy-wait for all operations",
+      "Physical memory was too large for any single program to use efficiently"
+    ],
+    ans: 1,
+    exp: "With only one process in memory, whenever that process blocks on I/O the CPU has nothing else to do. Multiprogramming solves this by keeping multiple processes in memory simultaneously, so the OS can switch to another process when one blocks on I/O — maximizing CPU utilization."
+  },
+  {
+    q: "What two problems did multiprogramming (multiple processes in memory) introduce that did not exist with a single-process model?",
+    opts: [
+      "Longer turnaround time and higher power consumption",
+      "Memory protection (one process accessing another's memory) and the need for address space isolation",
+      "Increased disk usage and slower file system operations",
+      "More complex system calls and larger OS kernel size"
+    ],
+    ans: 1,
+    exp: "When multiple processes share physical memory, a buggy or malicious process could accidentally or deliberately read/write another process's memory region. This requires memory protection hardware (like base-and-bounds) to enforce isolation and ensure each process can only access its own address space."
+  },
+  {
+    q: "Which scheduling algorithm provides the optimal average turnaround time when all jobs are known and arrive simultaneously?",
+    opts: [
+      "Round Robin with a 1ms time slice",
+      "FIFO",
+      "Shortest Job First (SJF)",
+      "MLFQ"
+    ],
+    ans: 2,
+    exp: "When all jobs arrive at the same time and their burst times are known, SJF gives optimal average turnaround time. By always running the shortest remaining job first, the accumulated turnaround times of short jobs are minimized. MLFQ, FIFO, and RR all produce worse average turnaround in this scenario."
+  },
+  {
+    q: "The Solaris MLFQ Time-Sharing class uses 60 queues. How does it handle priority boosting?",
+    opts: [
+      "It never boosts priority — jobs only move downward through queues",
+      "It boosts all jobs to the top queue every millisecond to ensure perfect fairness",
+      "It uses a formula based on CPU usage history to compute priority, boosting via a decay function",
+      "It raises priorities approximately every 1 second and uses slowly increasing time-slice lengths"
+    ],
+    ans: 3,
+    exp: "The Solaris Time-Sharing scheduler implements MLFQ with 60 queues, time slices that grow slowly from 20ms at the highest priority to a few hundred milliseconds at the lowest, and a priority boost occurring roughly every 1 second. FreeBSD (not Solaris) uses the decay-based formula approach."
+  },
+  {
+    q: "What does the bounds register represent, and what are the two ways it can be interpreted?",
+    opts: [
+      "The base physical address; interpreted as either a segment start or a segment end",
+      "The process's priority level; interpreted as either an absolute or relative priority",
+      "The size of the address space or the physical end address of the address space",
+      "The maximum number of open file descriptors; interpreted as either per-process or system-wide"
+    ],
+    ans: 2,
+    exp: "The bounds register can hold either (1) the size of the address space (then the check is: virtual address < bounds) or (2) the physical end address of the address space (then the check is: physical address < bounds). Both interpretations enforce the same protection — they just represent the limit differently."
+  },
+  {
+    q: "A scheduler measures average response time of 5s with SJF and 1s with RR (1s quantum) for the same workload. What does this illustrate?",
+    opts: [
+      "SJF is always worse than RR in every metric",
+      "Response time and turnaround time are always optimized by the same algorithm",
+      "There is a fundamental trade-off: algorithms optimizing turnaround (SJF) hurt response time, and algorithms optimizing response time (RR) hurt turnaround",
+      "The time slice length has no effect on turnaround time"
+    ],
+    ans: 2,
+    exp: "This is the core scheduling trade-off. SJF optimizes turnaround by completing short jobs quickly, but longer jobs wait a long time for their first CPU slot. RR gives every job quick access (good response time) but spreads completion times out (bad turnaround). No single algorithm wins on both metrics simultaneously."
+  },
+  {
+    q: "In the address translation example with virtual address 15KB and base=32KB, what is the resulting physical address?",
+    opts: [
+      "15KB",
+      "32KB",
+      "47KB",
+      "17KB"
+    ],
+    ans: 2,
+    exp: "physical address = virtual address + base = 15KB + 32KB = 47KB. This is the fundamental base-and-bounds calculation. The virtual address 15KB is what the program sees and uses; 47KB is where the data actually lives in physical RAM. The hardware performs this addition transparently on every memory access."
+  }
+];
+let answered = Array(NQ).fill(false);
+let score = 0;
+function buildQuiz() {
+  const container = document.getElementById('questions');
+  questions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    let html = '<div class="q-num">Question ' + (qi+1) + ' of ' + NQ + '</div><div class="q-text">' + q.q + '</div>';
+    q.opts.forEach((o, oi) => { html += '<div class="option" id="opt-' + qi + '-' + oi + '" onclick="answer(' + qi + ',' + oi + ')"><span class="letter">' + 'ABCD'[oi] + '.</span><span>' + o + '</span></div>'; });
+    html += '<div class="explanation" id="exp-' + qi + '"><strong>Explanation:</strong> ' + q.exp + '</div>';
+    card.innerHTML = html;
+    container.appendChild(card);
+  });
+}
+function answer(qi, oi) {
+  if (answered[qi]) return;
+  answered[qi] = true;
+  const correct = questions[qi].ans;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('opt-' + qi + '-' + i);
+    if (i === correct) el.classList.add('correct');
+    else if (i === oi) el.classList.add('wrong');
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('exp-' + qi).classList.add('show');
+  if (oi === correct) score++;
+  document.getElementById('scorefill').style.width = (score/NQ*100) + '%';
+  document.getElementById('scoreval').textContent = score + ' / ' + NQ;
+}
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+buildQuiz();
+</script>
+</body>
+</html>
